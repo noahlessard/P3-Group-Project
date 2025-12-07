@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sanity Protocol</title>
+    <!-- Tailwind CSS for UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #1a1a1a; font-family: 'Courier New', Courier, monospace; }
+        #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        
+        /* UI Layers */
+        .hud-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        .modal-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; pointer-events: none; display: flex; justify-content: center; align-items: center;}
+        
+        /* Interactive elements within layers need pointer-events auto */
+        .interactive { pointer-events: auto; }
+        
+        /* Custom Scrollbar for Dialog */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #333; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+
+        /* Animation for Dialog */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .dialog-anim { animation: fadeIn 0.3s ease-out; }
+        
+        /* Toast Notification */
+        .toast {
+            animation: fadeOut 3s forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateY(0); }
+            10% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Container -->
+    <div id="game-container"></div>
+
+    <!-- HUD Layer (Stats, Buttons, Toasts) -->
+    <div class="hud-layer flex flex-col justify-between p-4">
+        
+        <!-- Top Bar: Stats -->
+        <div class="flex justify-between items-start pointer-events-none">
+            <div class="interactive bg-black/70 text-white p-4 rounded border border-gray-600 backdrop-blur-sm shadow-xl">
+                <h2 class="text-xl font-bold mb-2 tracking-wider">SANITY</h2>
+                <div class="w-64 h-6 bg-gray-900 rounded overflow-hidden border border-gray-600 relative">
+                    <div id="sanity-bar" class="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-500" style="width: 100%;"></div>
+                </div>
+                <p id="sanity-text" class="text-right mt-1 text-sm text-blue-300 font-mono">100/100</p>
+            </div>
+
+            <button id="btn-options" class="interactive bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded border border-gray-500 shadow-lg transition-colors">
+                OPTIONS
+            </button>
+        </div>
+
+        <!-- Notification Area -->
+        <div id="notification-area" class="flex flex-col items-center justify-end pb-20 w-full pointer-events-none">
+            <!-- Dynamic toasts go here -->
+        </div>
+    </div>
+
+    <!-- Splash Screen Layer -->
+    <div id="splash-screen" class="modal-layer bg-black/95 z-[100] interactive flex-col">
+        <h1 class="text-6xl text-white font-bold mb-4 tracking-widest text-blue-500 shadow-blue-500/50 drop-shadow-lg select-none">SANITY PROTOCOL</h1>
+        <p class="text-gray-400 mb-8 max-w-md text-center select-none">Collect clues. Manage resources. Maintain your grip on reality.</p>
+        <button id="btn-start" class="interactive bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-10 rounded shadow-lg transform transition hover:scale-105 cursor-pointer border border-blue-400">
+            INITIATE JOURNEY
+        </button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="hidden modal-layer bg-red-900/95 z-[100] interactive flex-col">
+        <h1 class="text-6xl text-white font-bold mb-4 tracking-widest text-red-500 shadow-red-500/50 drop-shadow-lg select-none">SANITY LOST</h1>
+        <p class="text-gray-300 mb-8 max-w-md text-center select-none">The pressure was too much. Reality has fractured.</p>
+        <button id="btn-restart" class="interactive bg-red-600 hover:bg-red-500 text-white font-bold py-4 px-10 rounded shadow-lg transform transition hover:scale-105 cursor-pointer border border-red-400">
+            TRY AGAIN
+        </button>
+    </div>
+
+    <!-- Options Modal -->
+    <div id="options-modal" class="hidden modal-layer bg-black/80 z-[60] interactive">
+        <div class="bg-gray-900 border border-gray-600 p-8 rounded-lg w-96 shadow-2xl pointer-events-auto">
+            <h2 class="text-2xl text-white mb-6 border-b border-gray-700 pb-2">SYSTEM CONFIG</h2>
+            
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-300">Render Mode</span>
+                    <button id="toggle-mode" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-white border border-gray-500 transition-colors">FULL TEXTURE</button>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-300">Debug: Time Warp (x5)</span>
+                    <input type="checkbox" id="chk-timewarp" class="w-5 h-5 cursor-pointer">
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-300">Zoom</span>
+                    <span class="text-xs text-gray-500">Mouse Wheel</span>
+                </div>
+                
+                 <div class="flex items-center justify-between">
+                    <span class="text-gray-300">Pan</span>
+                    <span class="text-xs text-gray-500">Click & Drag Board</span>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-gray-700">
+                    <button id="btn-close-options" class="w-full bg-red-900/50 hover:bg-red-800 text-red-200 py-2 rounded border border-red-800 transition-colors">CLOSE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialog Modal -->
+    <div id="dialog-modal" class="hidden modal-layer z-[70] interactive">
+        <div class="dialog-anim bg-slate-100 p-1 rounded-sm shadow-2xl max-w-sm w-full transform rotate-1 pointer-events-auto">
+            <div class="bg-white border-2 border-slate-800 p-6 flex flex-col gap-4">
+                <h2 id="dialog-title" class="text-2xl font-bold text-slate-900 border-b-2 border-slate-900 pb-2">TITLE</h2>
+                
+                <div id="dialog-image-container" class="w-full aspect-square bg-slate-200 flex items-center justify-center overflow-hidden border border-slate-300 relative">
+                    <!-- Image inserted via JS -->
+                    <div id="dialog-img-placeholder" class="text-slate-400 italic">No Signal</div>
+                </div>
+
+                <p id="dialog-desc" class="text-slate-800 leading-relaxed text-sm">
+                    Description goes here...
+                </p>
+
+                <button id="btn-dialog-ok" class="mt-2 bg-slate-900 hover:bg-slate-700 text-white font-bold py-2 px-4 w-full transition-colors cursor-pointer">
+                    ACKNOWLEDGE
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+/**
+ * --- DATA CONFIGURATION ---
+ */
+
+const DIALOG_DB = {
+    "intro_success": {
+        title: "Study Successful",
+        image: "testimage.webp", // Example valid path
+        description: "You managed to focus for a few hours. The material is dry, but you feel a sense of accomplishment. You found a receipt in the textbook."
+    },
+    "intro_fail": {
+        title: "Distracted",
+        image: null,
+        description: "You tried to study, but without the textbook, you just stared at the wall. Your anxiety grows."
+    },
+    "coffee_break": {
+        title: "Caffeinated",
+        image: "https://placehold.co/600x400/8b5cf6/white?text=Hot+Coffee", 
+        description: "The bitter liquid warms your soul. You feel ready to take on the world, or at least one more hour of calculus."
+    },
+    "art_therapy": {
+        title: "Art Therapy",
+        image: "https://placehold.co/600x400/f59e0b/white?text=Abstract+Art",
+        description: "You paint your feelings. It's messy, but it helps clear your mind."
+    },
+    "art_practice": {
+        title: "Studio Time",
+        image: null,
+        description: "You work on your technique. You produced some decent sketches. A new opportunity for your hobby has opened up."
+    },
+    "board_decay": {
+        title: "Overwhelmed",
+        image: null,
+        description: "The task was left unattended for too long. It weighs on your mind, draining your mental state."
+    }
+};
+
+const CARDS_DB = {
+    "card_study": {
+        id: "card_study",
+        name: "Study Session",
+        type: "action",
+        color: 0x3b82f6, 
+        image: "https://placehold.co/200x150/3b82f6/white?text=Study",
+        timer: 180, 
+        boardTimer: 600, 
+        slotRequirement: ["slot_work"],
+        reqQuantity: 1,
+        reqCards: ["Textbook"],
+        reqPunishmentCards: ["Distraction"],
+        rewardCards: ["Clue: Receipt", "Coffee"],
+        removeCards: [], 
+        rewardSanity: 5,
+        punishmentSanity: -10,
+        rewardDialog: "intro_success",
+        punishmentDialog: "intro_fail"
+    },
+    "card_textbook": {
+        id: "card_textbook",
+        name: "Textbook",
+        type: "resource",
+        color: 0x9ca3af,
+        image: "https://placehold.co/200x150/9ca3af/white?text=Book",
+        timer: 0,
+        boardTimer: 0, 
+        slotRequirement: ["slot_work"], 
+        reqQuantity: 0,
+        reqCards: [],
+        reqPunishmentCards: [],
+        rewardCards: [],
+        removeCards: [],
+        rewardSanity: 0,
+        punishmentSanity: 0,
+        rewardDialog: null,
+        punishmentDialog: null
+    },
+    "card_coffee": {
+        id: "card_coffee",
+        name: "Coffee",
+        type: "consumable",
+        color: 0xef4444,
+        image: "https://placehold.co/200x150/ef4444/white?text=Latte",
+        timer: 120,
+        boardTimer: 300, 
+        slotRequirement: ["slot_health"],
+        reqQuantity: 0,
+        reqCards: [],
+        reqPunishmentCards: [],
+        rewardCards: [],
+        removeCards: ["Coffee"],
+        rewardSanity: 15,
+        punishmentSanity: 0,
+        rewardDialog: "coffee_break",
+        punishmentDialog: null
+    },
+    "card_painting": {
+        id: "card_painting",
+        name: "Painting",
+        type: "hobby",
+        color: 0xf59e0b, 
+        image: "https://placehold.co/200x150/f59e0b/white?text=Painting",
+        timer: 100,
+        boardTimer: 0,
+        slotRequirement: ["slot_work", "slot_health", "slot_hobby"], 
+        reqQuantity: 0,
+        reqCards: [],
+        reqPunishmentCards: [],
+        rewardCards: [],
+        rewardSanity: 0,
+        rewardsBySlot: {
+            "slot_health": {
+                rewardSanity: 15,
+                rewardDialog: "art_therapy"
+            },
+            "slot_work": {
+                rewardCards: ["Painting", "Painting"], 
+                rewardSanity: 2,
+                rewardDialog: "art_practice"
+            },
+            "slot_hobby": {
+                 rewardSanity: 20,
+                 rewardDialog: "art_therapy"
+            }
+        },
+        removeCards: ["Painting"], 
+        punishmentSanity: 0,
+        punishmentDialog: null
+    },
+    "card_receipt": {
+        id: "card_receipt",
+        name: "Clue: Receipt",
+        type: "clue",
+        color: 0xf59e0b,
+        image: "https://placehold.co/200x150/f59e0b/white?text=Receipt",
+        timer: 0,
+        boardTimer: 0,
+        slotRequirement: null,
+        reqQuantity: 0,
+        reqCards: [],
+        reqPunishmentCards: [],
+        rewardCards: [],
+        removeCards: [],
+        rewardSanity: 0,
+        punishmentSanity: 0,
+        rewardDialog: null,
+        punishmentDialog: null
+    }
+};
+
+const SLOTS_CONFIG = [
+    { id: "slot_work", name: "Labor", x: -4, z: 0, color: 0x3b82f6 }, // Blueish
+    { id: "slot_health", name: "Health", x: 4, z: 0, color: 0xef4444 } // Reddish
+];
+
+/**
+ * --- ENGINE CORE ---
+ */
+
+class GameEngine {
+    constructor() {
+        this.sanity = 100;
+        this.maxSanity = 100;
+        this.isPlaying = false;
+        this.isPaused = false;
+        this.debugTimeWarp = false;
+        this.renderMode = 'full'; // Default to Full
+
+        // Three.js Core
+        this.scene = null;
+        this.camera = null;
+        this.renderer = null;
+        this.raycaster = new THREE.Raycaster();
+        this.mouse = new THREE.Vector2();
+
+        // Game Objects
+        this.cards = []; 
+        this.slots = []; 
+        this.draggedCard = null;
+        this.dragOffset = new THREE.Vector3();
+        this.plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); 
+        
+        // State Flags
+        this.hasGeneratedHobbySlot = false;
+
+        // Camera Controls
+        this.zoomMin = 5;
+        this.zoomMax = 30;
+        this.cameraTarget = new THREE.Vector3(0, 0, 1.5);
+        this.isPanning = false;
+        this.panStart = new THREE.Vector2();
+        this.lastCameraPos = new THREE.Vector3();
+
+        this.initThree();
+        this.setupEvents();
+        this.animate();
+    }
+
+    initThree() {
+        const container = document.getElementById('game-container');
+        
+        // Scene
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x111111); // Darker background
+        this.scene.fog = new THREE.Fog(0x111111, 20, 60);
+
+        // Camera
+        this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+        this.camera.position.set(0, 16, 12);
+        this.camera.lookAt(this.cameraTarget);
+
+        // Renderer
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.domElement.style.outline = "none";
+        container.appendChild(this.renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        this.scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        
+        // Expanded Shadow Range
+        dirLight.shadow.mapSize.width = 4096;
+        dirLight.shadow.mapSize.height = 4096;
+        const shadowRange = 50;
+        dirLight.shadow.camera.left = -shadowRange;
+        dirLight.shadow.camera.right = shadowRange;
+        dirLight.shadow.camera.top = shadowRange;
+        dirLight.shadow.camera.bottom = -shadowRange;
+        dirLight.shadow.camera.far = 100;
+        
+        this.scene.add(dirLight);
+
+        // Floor
+        const floorGeo = new THREE.PlaneGeometry(200, 200);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9, metalness: 0.1 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        this.scene.add(floor);
+    }
+
+    // --- GAMEPLAY STATE ---
+
+    startGame() {
+        this.isPlaying = true;
+        this.sanity = 100;
+        this.hasGeneratedHobbySlot = false;
+        this.updateSanityUI();
+        
+        // Clear existing
+        this.cards.forEach(c => this.scene.remove(c.mesh));
+        this.slots.forEach(s => this.scene.remove(s.mesh));
+        this.cards = [];
+        this.slots = [];
+
+        // Spawn Slots
+        SLOTS_CONFIG.forEach(cfg => {
+            this.createSlot(cfg);
+        });
+
+        // Spawn Initial Cards
+        this.spawnCard("card_study", -2, 4);
+        this.spawnCard("card_textbook", 0, 4);
+        this.spawnCard("card_painting", 2, 4);
+    }
+
+    restartGame() {
+        document.getElementById('game-over-screen').classList.add('hidden');
+        this.startGame();
+    }
+
+    createSlot(config) {
+        const slot = new SlotMesh(config, this.scene);
+        this.slots.push(slot);
+    }
+
+    // New Stacking/Collision Logic
+    resolveCollision(card) {
+        // Iterate a few times to resolve multiple collisions
+        for(let i=0; i<3; i++) {
+            let collisionFound = false;
+            
+            for(const other of this.cards) {
+                if(other === card) continue;
+                if(other.activeSlot) continue; // Don't collide with slot cards
+                
+                // Simple Box collision check (Card size approx 2x3)
+                const dx = card.targetPos.x - other.targetPos.x;
+                const dz = card.targetPos.z - other.targetPos.z;
+                
+                const w = 2.1; 
+                const h = 3.1;
+                
+                if (Math.abs(dx) < w && Math.abs(dz) < h) {
+                    collisionFound = true;
+                    
+                    // Calculate Overlap Area
+                    const overlapX = w - Math.abs(dx);
+                    const overlapZ = h - Math.abs(dz);
+                    const area = overlapX * overlapZ;
+                    const maxArea = w * h;
+                    const overlapRatio = area / maxArea;
+                    
+                    // Threshold for Stacking vs Pushing
+                    if (overlapRatio > 0.6) {
+                         // STACK (High Overlap)
+                         const newY = other.targetPos.y + 0.06;
+                         if (card.targetPos.y <= newY) {
+                             card.targetPos.y = newY;
+                         }
+                         // Gently pull towards center for neatness
+                         card.targetPos.x += (other.targetPos.x - card.targetPos.x) * 0.15;
+                         card.targetPos.z += (other.targetPos.z - card.targetPos.z) * 0.15;
+                         
+                    } else {
+                        // PUSH (Low Overlap)
+                        if (overlapX < overlapZ) {
+                            const sign = dx >= 0 ? 1 : -1;
+                            card.targetPos.x = other.targetPos.x + (sign * w);
+                        } else {
+                            const sign = dz >= 0 ? 1 : -1;
+                            card.targetPos.z = other.targetPos.z + (sign * h);
+                        }
+                        
+                        // Ensure it drops to board level
+                        if(other.targetPos.y < 0.1) {
+                            card.targetPos.y = 0.05;
+                        } else {
+                            card.targetPos.y = 0.05;
+                        }
+                    }
+                }
+            }
+            if(!collisionFound) break;
+        }
+    }
+
+    spawnCard(cardId, x, z) {
+        const config = CARDS_DB[cardId];
+        if(!config) {
+            console.error("Card config not found:", cardId);
+            return;
+        }
+        
+        // Deep copy config
+        const instanceConfig = JSON.parse(JSON.stringify(config));
+        const card = new CardMesh(instanceConfig, this.scene, this.renderMode);
+        card.setPosition(x, 0.05, z);
+        
+        // Resolve collision immediately on spawn so they don't overlap
+        this.cards.push(card);
+        this.resolveCollision(card); 
+        
+        card.mesh.rotation.y = 0;
+        return card;
+    }
+
+    removeCard(card) {
+        this.scene.remove(card.mesh);
+        this.cards = this.cards.filter(c => c !== card);
+    }
+
+    returnToHand(card) {
+        // Return to a nice grid at the bottom
+        // Instead of hard math, search for a free spot in the "Hand Zone"
+        // Hand Zone approx: X: -8 to 8, Z: 6 to 9
+        
+        const startX = -6;
+        const startZ = 7;
+        const stepX = 2.2;
+        const stepZ = 3.2; // Not really using rows yet, just X line
+        
+        let foundSpot = false;
+        let xPos = startX;
+        let zPos = startZ;
+        
+        // Try up to 10 spots
+        for(let i=0; i<10; i++) {
+            const testX = startX + (i * stepX);
+            const testZ = startZ;
+            
+            // Check if this spot is occupied by any card ON THE BOARD (not in slot)
+            const isOccupied = this.cards.some(other => {
+                if (other === card) return false;
+                if (other.activeSlot) return false;
+                // Check distance
+                const dx = Math.abs(other.targetPos.x - testX);
+                const dz = Math.abs(other.targetPos.z - testZ);
+                return (dx < 1.5 && dz < 2.0); // If something is close
+            });
+            
+            if (!isOccupied) {
+                xPos = testX;
+                zPos = testZ;
+                foundSpot = true;
+                break;
+            }
+        }
+        
+        // If no spot found (full hand), just stack at end or random offset
+        if (!foundSpot) {
+            xPos = startX + (Math.random() * 10);
+            zPos = startZ + (Math.random() * 2);
+        }
+
+        // Animate return
+        card.activeSlot = null;
+        card.targetPos.set(xPos, 0.05, zPos);
+        card.targetRotY = 0; 
+        
+        // Run collision resolver one last time just in case
+        this.resolveCollision(card);
+        
+        card.currentTimer = card.data.timer;
+        card.updateTimerBar();
+    }
+
+    updateSanity(amount) {
+        if (!this.isPlaying) return; 
+
+        this.sanity += amount;
+        if(this.sanity > this.maxSanity) this.sanity = this.maxSanity;
+        
+        // Check for Game Over
+        if(this.sanity <= 0) {
+             this.sanity = 0;
+             this.triggerGameOver();
+        } 
+
+        this.updateSanityUI();
+        
+        // Visual feedback
+        const el = document.getElementById('sanity-text');
+        if (el) {
+            el.style.color = amount > 0 ? '#4ade80' : '#ef4444';
+            setTimeout(() => el.style.color = '#93c5fd', 500);
+        }
+    }
+
+    triggerGameOver() {
+        this.isPlaying = false;
+        document.getElementById('game-over-screen').classList.remove('hidden');
+    }
+
+    updateSanityUI() {
+        const bar = document.getElementById('sanity-bar');
+        const text = document.getElementById('sanity-text');
+        const pct = (this.sanity / this.maxSanity) * 100;
+        bar.style.width = `${pct}%`;
+        text.innerText = `${this.sanity}/${this.maxSanity}`;
+    }
+
+    showDialog(dialogId) {
+        const data = DIALOG_DB[dialogId];
+        if(!data) return;
+
+        const modal = document.getElementById('dialog-modal');
+        const title = document.getElementById('dialog-title');
+        const desc = document.getElementById('dialog-desc');
+        const imgContainer = document.getElementById('dialog-image-container');
+        
+        // Handle Image
+        imgContainer.innerHTML = ''; // Clear previous
+        if(data.image) {
+            const img = document.createElement('img');
+            img.src = data.image;
+            img.className = "w-full h-full object-cover";
+            imgContainer.appendChild(img);
+        } else {
+            imgContainer.innerHTML = '<div id="dialog-img-placeholder" class="text-slate-400 italic">No Signal</div>';
+        }
+
+        title.innerText = data.title;
+        desc.innerText = data.description;
+        
+        modal.classList.remove('hidden');
+        this.isPaused = true;
+    }
+
+    // --- LOGIC LOOP ---
+
+    update() {
+        if(!this.isPlaying) return;
+
+        // Visuals ALWAYS run (even if paused for dialog) to allow cards to return/settle
+        this.updateVisuals();
+
+        // Game Logic (Timers) only runs if not paused
+        if(!this.isPaused) {
+            this.updateLogic();
+        }
+    }
+
+    updateVisuals() {
+        this.cards.forEach(card => {
+            // Smooth movement
+            card.mesh.position.lerp(card.targetPos, 0.2);
+            // Smooth rotation
+            if(card.targetRotY !== undefined) {
+                 card.mesh.rotation.y += (card.targetRotY - card.mesh.rotation.y) * 0.1;
+            }
+        });
+    }
+
+    updateLogic() {
+        const speedMult = this.debugTimeWarp ? 5 : 1;
+
+        // Map to track active timers per slot
+        const slotTimers = {}; // { slotId: { current: val, total: val } }
+
+        this.cards.forEach(card => {
+            if(card.activeSlot) {
+                // SLOT STATE
+                
+                // Hide Red Timer while in slot
+                card.setBoardTimerVisible(false);
+
+                // SLOT TIMER LOGIC (Yellow) - Visuals on SlotMesh
+                // Pauses if card is lifted (picked up)
+                if(card.data.timer > 0 && !card.isLifted) {
+                    card.currentTimer -= 1 * speedMult;
+                    
+                    // Track for slot
+                    slotTimers[card.activeSlot.id] = {
+                        current: card.currentTimer,
+                        total: card.data.timer
+                    };
+
+                    if(card.currentTimer <= 0) {
+                        this.resolveCard(card);
+                    }
+                }
+            } else {
+                // BOARD STATE
+                
+                // Show Red Timer
+                card.setBoardTimerVisible(true);
+
+                // BOARD DECAY TIMER (Red)
+                // Now runs even if lifted (removed !card.isLifted check)
+                if(card.data.boardTimer > 0) {
+                     card.currentBoardTimer -= 1 * speedMult;
+                     card.updateBoardTimerBar();
+
+                     if(card.currentBoardTimer <= 0) {
+                         // Punishment!
+                         const penalty = card.data.punishmentSanity !== 0 ? card.data.punishmentSanity : -5;
+                         this.updateSanity(penalty);
+                         this.showToast(`Neglect: ${card.data.name} caused Sanity loss!`);
+                         card.flashColor(0xff0000);
+                         
+                         if (card.data.removeCards && card.data.removeCards.includes(card.data.name)) {
+                             this.removeCard(card);
+                         } else {
+                             card.currentBoardTimer = card.data.boardTimer;
+                         }
+                     }
+                }
+
+                // Reset slot timer if pulled out
+                if(card.currentTimer < card.data.timer) {
+                    card.currentTimer = card.data.timer;
+                }
+            }
+        });
+
+        // Update Slot Visuals
+        this.slots.forEach(slot => {
+            if (slotTimers[slot.id]) {
+                const info = slotTimers[slot.id];
+                slot.updateTimer(info.current, info.total);
+            } else {
+                slot.hideTimer();
+            }
+        });
+    }
+
+    resolveCard(card) {
+        const slot = card.activeSlot;
+        if(!slot) return;
+
+        // Find ALL cards currently in this slot (including dragged/dropped ones)
+        // using geometric distance
+        const cardsInSlot = this.cards.filter(c => {
+            const dist = c.mesh.position.distanceTo(slot.mesh.position);
+            return dist < 1.5; 
+        });
+
+        // Identify Participants (excluding main card for logic check)
+        const participants = cardsInSlot.filter(c => c !== card);
+
+        // Check Requirements
+        const reqQuantity = card.data.reqQuantity;
+        const requiredNames = card.data.reqCards || [];
+        const punishmentNames = card.data.reqPunishmentCards || [];
+        
+        let success = false;
+        let isPunishment = false;
+
+        const hasRequired = requiredNames.every(name => participants.some(c => c.data.name === name));
+        const hasPunishment = punishmentNames.length > 0 && punishmentNames.some(name => participants.some(c => c.data.name === name));
+
+        if (reqQuantity === 0) {
+            success = true;
+        } else {
+            if(participants.length >= reqQuantity) {
+                if(hasRequired) success = true;
+                else if (hasPunishment) isPunishment = true;
+            }
+        }
+
+        if (success) {
+            // SPECIAL LOGIC: Painting + Work Slot = New Hobby Slot
+            if (card.data.name === "Painting" && slot.id === "slot_work" && !this.hasGeneratedHobbySlot) {
+                this.hasGeneratedHobbySlot = true;
+                this.createSlot({ id: "slot_hobby", name: "Hobby", x: 0, z: -3.5, color: 0xf59e0b });
+                this.showToast("NEW SLOT UNLOCKED: HOBBY");
+            }
+
+            // REWARD LOGIC
+            let rewards = {
+                sanity: card.data.rewardSanity || 0,
+                cards: card.data.rewardCards || [],
+                dialog: card.data.rewardDialog
+            };
+
+            if (card.data.rewardsBySlot && card.data.rewardsBySlot[slot.id]) {
+                const specific = card.data.rewardsBySlot[slot.id];
+                if(specific.rewardSanity !== undefined) rewards.sanity = specific.rewardSanity;
+                if(specific.rewardCards !== undefined) rewards.cards = specific.rewardCards;
+                if(specific.rewardDialog !== undefined) rewards.dialog = specific.rewardDialog;
+            }
+
+            this.updateSanity(rewards.sanity);
+            if(rewards.dialog) this.showDialog(rewards.dialog);
+            
+            if(rewards.cards) {
+                rewards.cards.forEach((name, i) => {
+                    const key = Object.keys(CARDS_DB).find(k => CARDS_DB[k].name === name);
+                    if(key) {
+                        const newC = this.spawnCard(key, slot.mesh.position.x + (i*0.5), slot.mesh.position.z + 2.0);
+                        if(newC) this.returnToHand(newC); 
+                    }
+                });
+            }
+
+            // --- CLEANUP ---
+            const cardsToRemoveNames = card.data.removeCards || [];
+            
+            cardsInSlot.forEach(c => {
+                if(cardsToRemoveNames.includes(c.data.name)) {
+                    this.removeCard(c);
+                } else {
+                    this.returnToHand(c);
+                }
+            });
+
+        } else if (isPunishment) {
+            // PUNISHMENT LOGIC
+            this.updateSanity(card.data.punishmentSanity || 0);
+            if(card.data.punishmentDialog) this.showDialog(card.data.punishmentDialog);
+            
+            cardsInSlot.forEach(c => {
+                 this.returnToHand(c);
+            });
+
+        } else {
+            // FAIL
+            card.flashColor(0xff0000);
+            card.currentTimer = card.data.timer;
+            card.updateTimerBar();
+        }
+    }
+
+    // --- INPUT HANDLING ---
+
+    setupEvents() {
+        window.addEventListener('resize', () => {
+            this.camera.aspect = window.innerWidth / window.innerHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        const container = document.getElementById('game-container');
+
+        // Mouse/Touch Events
+        container.addEventListener('mousedown', (e) => this.onMouseDown(e));
+        container.addEventListener('mousemove', (e) => this.onMouseMove(e));
+        container.addEventListener('mouseup', (e) => this.onMouseUp(e));
+
+        container.addEventListener('touchstart', (e) => { e.preventDefault(); this.onMouseDown(e.touches[0]); }, {passive: false});
+        container.addEventListener('touchmove', (e) => { e.preventDefault(); this.onMouseMove(e.touches[0]); }, {passive: false});
+        container.addEventListener('touchend', (e) => { e.preventDefault(); this.onMouseUp(e.changedTouches[0]); }, {passive: false});
+
+        // Zoom Event
+        container.addEventListener('wheel', (e) => this.onZoom(e), { passive: false });
+    }
+
+    onZoom(e) {
+        e.preventDefault();
+        const zoomSpeed = 0.02;
+        const delta = e.deltaY * zoomSpeed;
+
+        let newY = this.camera.position.y + delta;
+        if (newY < this.zoomMin) newY = this.zoomMin;
+        if (newY > this.zoomMax) newY = this.zoomMax;
+
+        const zOffset = newY * 0.75;
+
+        this.camera.position.y = newY;
+        this.camera.position.z = this.cameraTarget.z + zOffset;
+        this.camera.lookAt(this.cameraTarget);
+    }
+
+    getRayIntersects(clientX, clientY, objects) {
+        this.mouse.x = (clientX / window.innerWidth) * 2 - 1;
+        this.mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+        return this.raycaster.intersectObjects(objects, true);
+    }
+
+    onMouseDown(e) {
+        if(this.isPaused) return;
+        
+        const clientX = e.clientX || e.touches[0].clientX;
+        const clientY = e.clientY || e.touches[0].clientY;
+
+        const cardMeshes = this.cards.map(c => c.mesh);
+        const intersects = this.getRayIntersects(clientX, clientY, cardMeshes);
+
+        if(intersects.length > 0) {
+            // DRAG CARD
+            const hitMesh = intersects[0].object;
+            const cardWrapper = this.cards.find(c => c.mesh === hitMesh || c.mesh.children.includes(hitMesh));
+            
+            if(cardWrapper) {
+                this.draggedCard = cardWrapper;
+                this.draggedCard.setLifted(true);
+                
+                const planeIntersect = new THREE.Vector3();
+                this.raycaster.ray.intersectPlane(this.plane, planeIntersect);
+                this.dragOffset.subVectors(this.draggedCard.mesh.position, planeIntersect);
+                this.dragOffset.y = 0; 
+                
+                // When picked up, straighten
+                this.draggedCard.targetRotY = 0;
+            }
+        } else {
+            // PAN BOARD
+            this.isPanning = true;
+            this.panStart.set(clientX, clientY);
+        }
+    }
+
+    onMouseMove(e) {
+        const clientX = e.clientX || e.touches[0].clientX;
+        const clientY = e.clientY || e.touches[0].clientY;
+
+        if (this.draggedCard) {
+            // CARD DRAG LOGIC
+            this.mouse.x = (clientX / window.innerWidth) * 2 - 1;
+            this.mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+            this.raycaster.setFromCamera(this.mouse, this.camera);
+
+            const planeIntersect = new THREE.Vector3();
+            if(this.raycaster.ray.intersectPlane(this.plane, planeIntersect)) {
+                const newX = planeIntersect.x + this.dragOffset.x;
+                const newZ = planeIntersect.z + this.dragOffset.z;
+                this.draggedCard.targetPos.set(newX, 1.5, newZ); 
+            }
+        } else if (this.isPanning) {
+            // CAMERA PAN LOGIC
+            const deltaX = (clientX - this.panStart.x) * 0.02; // Sensitivty factor
+            const deltaY = (clientY - this.panStart.y) * 0.02;
+
+            const zoomFactor = this.camera.position.y / 20;
+
+            this.camera.position.x -= deltaX * zoomFactor;
+            this.camera.position.z -= deltaY * zoomFactor;
+            
+            this.cameraTarget.x -= deltaX * zoomFactor;
+            this.cameraTarget.z -= deltaY * zoomFactor;
+
+            this.camera.lookAt(this.cameraTarget);
+
+            // Reset start for next frame delta
+            this.panStart.set(clientX, clientY);
+        }
+    }
+
+    onMouseUp(e) {
+        if (this.isPanning) {
+            this.isPanning = false;
+            return;
+        }
+
+        if(!this.draggedCard) return;
+
+        let bestSlot = null;
+        let minDist = 999;
+
+        this.slots.forEach(slot => {
+            const dist = new THREE.Vector2(this.draggedCard.targetPos.x, this.draggedCard.targetPos.z)
+                .distanceTo(new THREE.Vector2(slot.mesh.position.x, slot.mesh.position.z));
+            
+            // Increased Slot Detection Radius from 1.5 to 2.5 (Easier drop)
+            if (dist < 2.5) {
+                if(dist < minDist) {
+                    minDist = dist;
+                    bestSlot = slot;
+                }
+            }
+        });
+
+        if (bestSlot) {
+            // CHECK REQUIREMENTS
+            const reqs = Array.isArray(this.draggedCard.data.slotRequirement) 
+                         ? this.draggedCard.data.slotRequirement 
+                         : [this.draggedCard.data.slotRequirement];
+
+            if (this.draggedCard.data.slotRequirement === null || reqs.includes(bestSlot.id)) {
+                
+                // Valid Drop
+                // For slot, finding highest Y of cards IN THAT SLOT
+                const cardsInSlot = this.cards.filter(c => {
+                     const dist = c.mesh.position.distanceTo(bestSlot.mesh.position);
+                     return dist < 1.5 && c !== this.draggedCard;
+                });
+                
+                let stackY = 0.05;
+                if(cardsInSlot.length > 0) {
+                     stackY = Math.max(...cardsInSlot.map(c => c.targetPos.y)) + 0.06;
+                }
+
+                this.draggedCard.targetPos.set(bestSlot.mesh.position.x, stackY, bestSlot.mesh.position.z);
+                
+                const jitterX = (Math.random() - 0.5) * 0.05;
+                const jitterZ = (Math.random() - 0.5) * 0.05;
+                this.draggedCard.targetPos.x += jitterX;
+                this.draggedCard.targetPos.z += jitterZ;
+                
+                // Add rotation jitter ONLY IN SLOTS
+                this.draggedCard.targetRotY = (Math.random() - 0.5) * 0.25;
+
+                this.draggedCard.activeSlot = bestSlot;
+                
+            } else {
+                // Invalid Slot
+                const reqText = reqs.map(r => r.replace('slot_', '').toUpperCase()).join(' OR ');
+                this.showToast(`WRONG SLOT: Needs ${reqText}`);
+                this.returnToHand(this.draggedCard);
+            }
+        } else {
+            // Dropped on board (Hand)
+            // Resolve collisions (Push vs Stack)
+            this.draggedCard.activeSlot = null;
+            this.draggedCard.targetRotY = 0; // Straight on board
+            this.draggedCard.targetPos.y = 0.05; // Default floor
+            
+            // Run collision solver
+            this.resolveCollision(this.draggedCard);
+        }
+
+        this.draggedCard.setLifted(false);
+        this.draggedCard = null;
+    }
+
+    animate() {
+        requestAnimationFrame(() => this.animate());
+        this.update();
+        if(this.renderer && this.scene && this.camera) {
+            this.renderer.render(this.scene, this.camera);
+        }
+    }
+
+    toggleRenderMode() {
+        this.renderMode = this.renderMode === 'prototype' ? 'full' : 'prototype';
+        const oldCards = [...this.cards];
+        oldCards.forEach(c => {
+            const pos = c.mesh.position.clone();
+            const timer = c.currentTimer;
+            this.removeCard(c);
+            const newCard = this.spawnCard(c.data.id, pos.x, pos.z);
+            if(newCard) {
+                newCard.currentTimer = timer;
+                newCard.mesh.position.copy(pos);
+                newCard.targetPos.copy(pos);
+                newCard.targetPos.y = pos.y; 
+            }
+        });
+    }
+    
+    showToast(msg) {
+        const area = document.getElementById('notification-area');
+        const div = document.createElement('div');
+        div.className = "toast bg-white/90 text-black px-6 py-3 rounded-full shadow-2xl mb-2 font-bold border border-gray-300 flex items-center gap-2";
+        div.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> ${msg}`;
+        area.appendChild(div);
+        setTimeout(() => div.remove(), 3000);
+    }
+}
+
+/**
+ * --- GAME OBJECTS ---
+ */
+
+class SlotMesh {
+    constructor(config, scene) {
+        this.id = config.id;
+        this.scene = scene;
+        
+        const width = 2.2;
+        const height = 3.2;
+        
+        const geometry = new THREE.PlaneGeometry(width, height);
+        
+        // Dashed Border Texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 128; canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = `#${config.color.toString(16).padStart(6, '0')}`;
+        ctx.lineWidth = 4;
+        ctx.setLineDash([12, 10]);
+        ctx.strokeRect(2, 2, 124, 124);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const material = new THREE.MeshBasicMaterial({ 
+            map: texture, 
+            transparent: true,
+            opacity: 0.8,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
+
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.rotation.x = -Math.PI / 2;
+        this.mesh.position.set(config.x, 0.01, config.z);
+        scene.add(this.mesh);
+
+        // --- FIXED LABEL ---
+        const labelCanvas = document.createElement('canvas');
+        labelCanvas.width = 256; labelCanvas.height = 64;
+        const lCtx = labelCanvas.getContext('2d');
+        lCtx.fillStyle = `#${config.color.toString(16).padStart(6, '0')}`;
+        lCtx.font = "bold 40px Courier New";
+        lCtx.textAlign = "center";
+        lCtx.fillText(config.name, 128, 45);
+        
+        const labelTex = new THREE.CanvasTexture(labelCanvas);
+        const labelMat = new THREE.MeshBasicMaterial({ 
+            map: labelTex, 
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+        
+        const labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 0.5), labelMat);
+        labelMesh.position.set(config.x, 0.02, config.z - 2.0); 
+        labelMesh.rotation.x = -Math.PI / 2;
+        scene.add(labelMesh);
+
+        // --- SLOT TIMER BAR (Visual Only) ---
+        // Hidden by default, shown when active
+        const barBgGeo = new THREE.PlaneGeometry(2.0, 0.2);
+        const barBgMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        this.timerBarBg = new THREE.Mesh(barBgGeo, barBgMat);
+        // Positioned "above" the slot label, floating slightly
+        this.timerBarBg.position.set(config.x, 2.5, config.z - 2.0); 
+        // In 3D: Y is up. Slot is at Y=0.01. Label is Y=0.02.
+        // Wait, Label mesh coords:
+        // labelMesh.position.set(config.x, 0.02, config.z - 2.0);
+        // labelMesh.rotation.x = -Math.PI / 2;
+        // So Timer should act similar
+        
+        this.timerBarBg.position.set(config.x, 0.02, config.z - 2.4); 
+        this.timerBarBg.rotation.x = -Math.PI / 2;
+        this.timerBarBg.visible = false;
+        scene.add(this.timerBarBg);
+
+        const barGeo = new THREE.PlaneGeometry(2.0, 0.2);
+        barGeo.translate(1.0, 0, 0); // Anchor left
+        const barMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+        this.timerBar = new THREE.Mesh(barGeo, barMat);
+        this.timerBar.position.set(config.x - 1.0, 0.03, config.z - 2.4); 
+        this.timerBar.rotation.x = -Math.PI / 2;
+        this.timerBar.scale.set(0, 1, 1);
+        this.timerBar.visible = false;
+        scene.add(this.timerBar);
+    }
+
+    updateTimer(current, total) {
+        if (!this.timerBar.visible) {
+            this.timerBar.visible = true;
+            this.timerBarBg.visible = true;
+        }
+        const pct = 1 - (current / total);
+        this.timerBar.scale.x = Math.max(0, Math.min(1, pct));
+        
+        if(pct >= 1) this.timerBar.material.color.setHex(0x00ff00);
+        else this.timerBar.material.color.setHex(0xffff00);
+    }
+
+    hideTimer() {
+        if (this.timerBar.visible) {
+            this.timerBar.visible = false;
+            this.timerBarBg.visible = false;
+        }
+    }
+}
+
+class CardMesh {
+    constructor(data, scene, mode) {
+        this.data = data;
+        this.currentTimer = data.timer;
+        this.currentBoardTimer = data.boardTimer || 0;
+        this.targetPos = new THREE.Vector3();
+        this.targetRotY = 0; // New target rotation
+        this.activeSlot = null;
+        this.isLifted = false;
+
+        const geometry = new THREE.BoxGeometry(2, 0.05, 3);
+        
+        // Determine Border Color based on Logic
+        let borderColor = data.color; // Default
+        
+        const reqs = Array.isArray(data.slotRequirement) ? data.slotRequirement : (data.slotRequirement ? [data.slotRequirement] : []);
+        
+        if (reqs.length === 1) {
+            if(reqs[0] === 'slot_health') borderColor = 0xef4444; 
+            if(reqs[0] === 'slot_work') borderColor = 0x3b82f6; 
+        } else if (reqs.length > 1) {
+            borderColor = 0xf59e0b; 
+        }
+
+        // Pass calculated color to texture generator
+        let material;
+        if (mode === 'prototype') {
+            material = new THREE.MeshStandardMaterial({ 
+                color: borderColor, 
+                roughness: 0.7 
+            });
+        } else {
+            material = this.createCardTexture(data, borderColor);
+        }
+
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.castShadow = true;
+        this.mesh.receiveShadow = true;
+        
+        // --- SLOT TIMER BAR REMOVED ---
+        // (Visuals now handled by SlotMesh)
+
+        // --- BOARD DECAY BAR ---
+        if(data.boardTimer > 0) {
+            const dBarBgGeo = new THREE.PlaneGeometry(1.8, 0.1);
+            const dBarBgMat = new THREE.MeshBasicMaterial({ color: 0x330000 });
+            this.boardBarBg = new THREE.Mesh(dBarBgGeo, dBarBgMat);
+            this.boardBarBg.position.set(0, 0.026, 1.3); 
+            this.boardBarBg.rotation.x = -Math.PI / 2;
+            this.mesh.add(this.boardBarBg);
+
+            const dBarGeo = new THREE.PlaneGeometry(1.8, 0.1);
+            dBarGeo.translate(0.9, 0, 0); 
+            const dBarMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            this.boardBar = new THREE.Mesh(dBarGeo, dBarMat);
+            this.boardBar.position.set(-0.9, 0.027, 1.3); 
+            this.boardBar.rotation.x = -Math.PI / 2;
+            this.boardBar.scale.set(1, 1, 1); 
+            this.mesh.add(this.boardBar);
+        }
+
+        scene.add(this.mesh);
+    }
+
+    setBoardTimerVisible(visible) {
+        if(this.boardBar) {
+            this.boardBar.visible = visible;
+            this.boardBarBg.visible = visible;
+        }
+    }
+
+    createCardTexture(data, borderColor) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 384;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#1f2937'; 
+        ctx.fillRect(0, 0, 256, 384);
+
+        ctx.fillStyle = `#${borderColor.toString(16).padStart(6, '0')}`;
+        ctx.fillRect(0, 0, 256, 384);
+        
+        ctx.fillStyle = '#1f2937';
+        ctx.fillRect(10, 10, 236, 364);
+
+        // Placeholder Icon
+        ctx.fillStyle = '#374151'; 
+        ctx.fillRect(30, 40, 196, 150);
+        ctx.font = "40px Arial";
+        ctx.fillStyle = "#6b7280";
+        ctx.textAlign = "center";
+        ctx.fillText("IMG", 128, 130);
+        
+        // --- ASYNC IMAGE LOADER ---
+        // Create Texture early so we can refer to it
+        const texture = new THREE.CanvasTexture(canvas);
+        
+        if (data.image) {
+            const img = new Image();
+            img.onload = () => {
+                // Draw image over the placeholder area (x:30, y:40, w:196, h:150)
+                ctx.drawImage(img, 30, 40, 196, 150);
+                // Flag texture for update
+                texture.needsUpdate = true;
+            };
+            img.onerror = () => {
+                console.warn("Failed to load image for card:", data.name);
+            }
+            img.src = data.image;
+        }
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = "bold 24px Courier New";
+        ctx.textAlign = "center";
+        ctx.fillText(data.name, 128, 230);
+
+        ctx.fillStyle = '#9ca3af'; 
+        ctx.font = "italic 16px Arial";
+        ctx.fillText(data.type.toUpperCase(), 128, 260);
+
+        if(data.slotRequirement) {
+             const reqs = Array.isArray(data.slotRequirement) ? data.slotRequirement : [data.slotRequirement];
+             let reqText = reqs.length > 1 ? "ANY SLOT" : reqs[0].replace('slot_', '').toUpperCase();
+             
+             ctx.font = "bold 14px Arial";
+             ctx.fillStyle = "#ffffff";
+             ctx.fillText(reqText, 128, 300);
+        }
+        
+        // Force initial update just in case
+        texture.needsUpdate = true;
+
+        return [
+            new THREE.MeshStandardMaterial({ color: 0x222222 }), 
+            new THREE.MeshStandardMaterial({ color: 0x222222 }), 
+            new THREE.MeshStandardMaterial({ map: texture }),    
+            new THREE.MeshStandardMaterial({ color: 0x222222 }), 
+            new THREE.MeshStandardMaterial({ color: 0x222222 }), 
+            new THREE.MeshStandardMaterial({ color: 0x222222 })  
+        ];
+    }
+
+    setLifted(isLifted) {
+        this.isLifted = isLifted;
+        if(isLifted) {
+            this.mesh.scale.set(1.1, 1.1, 1.1);
+        } else {
+            this.mesh.scale.set(1, 1, 1);
+        }
+    }
+
+    setPosition(x, y, z) {
+        this.mesh.position.set(x, y, z);
+        this.targetPos.set(x, y, z);
+    }
+
+    updateTimerBar() {
+        // Deprecated - logic handled by SlotMesh now
+    }
+
+    updateBoardTimerBar() {
+        if(!this.boardBar) return;
+        const pct = this.currentBoardTimer / this.data.boardTimer;
+        this.boardBar.scale.x = Math.max(0, Math.min(1, pct));
+    }
+
+    flashColor(hex) {
+        if(this.mesh.material.length) return; 
+        const old = this.mesh.material.color.getHex();
+        this.mesh.material.color.setHex(hex);
+        setTimeout(() => {
+            this.mesh.material.color.setHex(old);
+        }, 300);
+    }
+}
+
+/**
+ * --- MAIN INITIALIZATION ---
+ */
+const game = new GameEngine();
+
+document.getElementById('btn-start').addEventListener('click', () => {
+    document.getElementById('splash-screen').style.display = 'none';
+    game.startGame();
+});
+
+document.getElementById('btn-restart').addEventListener('click', () => {
+    game.restartGame();
+});
+
+document.getElementById('btn-options').addEventListener('click', () => {
+    document.getElementById('options-modal').classList.remove('hidden');
+    game.isPaused = true;
+});
+
+document.getElementById('btn-close-options').addEventListener('click', () => {
+    document.getElementById('options-modal').classList.add('hidden');
+    game.isPaused = false;
+});
+
+document.getElementById('toggle-mode').addEventListener('click', (e) => {
+    game.toggleRenderMode();
+    e.target.innerText = game.renderMode === 'prototype' ? "PROTOTYPE" : "FULL TEXTURE";
+});
+
+document.getElementById('chk-timewarp').addEventListener('change', (e) => {
+    game.debugTimeWarp = e.target.checked;
+});
+
+document.getElementById('btn-dialog-ok').addEventListener('click', () => {
+    document.getElementById('dialog-modal').classList.add('hidden');
+    game.isPaused = false;
+});
+
+</script>
+</body>
+</html>
