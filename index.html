@@ -237,7 +237,6 @@ class GameEngine {
         this.zoomMax = 30;
         this.cameraTarget = new THREE.Vector3(0, 0, 1.5);
         this.targetCameraY = 16; // Target Y position for smooth zoom
-        this.targetCameraZ = 12; // Target Z position for smooth zoom
         this.zoomSmoothness = 0.1; // Lower = smoother but slower, higher = faster but chunkier
         this.isPanning = false;
         this.panStart = new THREE.Vector2();
@@ -871,11 +870,8 @@ class GameEngine {
         if (newY < this.zoomMin) newY = this.zoomMin;
         if (newY > this.zoomMax) newY = this.zoomMax;
 
-        const zOffset = newY * 0.75;
-
-        // Set target positions instead of directly setting camera position
+        // Set target Y position (Z will be calculated dynamically each frame)
         this.targetCameraY = newY;
-        this.targetCameraZ = this.cameraTarget.z + zOffset;
     }
 
     getRayIntersects(clientX, clientY, objects) {
@@ -1045,8 +1041,11 @@ class GameEngine {
 
         // Smooth camera zoom (always runs, even before game starts)
         if (this.camera) {
+            // Calculate target Z dynamically based on current cameraTarget (which changes with panning)
+            const targetZ = this.cameraTarget.z + (this.targetCameraY * 0.75);
+
             this.camera.position.y += (this.targetCameraY - this.camera.position.y) * this.zoomSmoothness;
-            this.camera.position.z += (this.targetCameraZ - this.camera.position.z) * this.zoomSmoothness;
+            this.camera.position.z += (targetZ - this.camera.position.z) * this.zoomSmoothness;
             this.camera.lookAt(this.cameraTarget);
         }
 
