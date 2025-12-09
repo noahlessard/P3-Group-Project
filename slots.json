@@ -1,0 +1,45 @@
+[
+  {
+    "id": "slot_work",
+    "name": "Labor",
+    "x": -4,
+    "z": 0,
+    "color": "0x3b82f6",
+    "startUnlocked": true
+  },
+  {
+    "id": "slot_health",
+    "name": "Health",
+    "x": 4,
+    "z": 0,
+    "color": "0xef4444",
+    "startUnlocked": true
+  },
+  {
+    "id": "slot_gossip",
+    "name": "Gossip",
+    "x": -4,
+    "z": -3.5,
+    "color": "0x8b5cf6",
+    "startUnlocked": false,
+    "unlockCondition": "lecture_complete"
+  },
+  {
+    "id": "slot_hobby",
+    "name": "Hobby",
+    "x": 0,
+    "z": -3.5,
+    "color": "0xf59e0b",
+    "startUnlocked": false,
+    "unlockCondition": "painting_work_complete"
+  },
+  {
+    "id": "slot_accuse",
+    "name": "Accuse",
+    "x": 4,
+    "z": -3.5,
+    "color": "0xef4444",
+    "startUnlocked": false,
+    "unlockCondition": "has_suspect_card"
+  }
+]

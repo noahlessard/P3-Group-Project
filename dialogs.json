@@ -28,5 +28,80 @@
     "title": "Overwhelmed",
     "image": null,
     "description": "The task was left unattended for too long. It weighs on your mind, draining your mental state."
+  },
+  "study_note": {
+    "title": "Suspicious Note Found",
+    "image": "noteIcon.png",
+    "description": "While studying, you find a cryptic note tucked between pages of your textbook. It mentions strange occurrences around campus buildings."
+  },
+  "shovel_success": {
+    "title": "Hard Work Pays Off",
+    "image": "shovelIcon.png",
+    "description": "You cleared the snow from the pathways. Your roommate walks by and thanks you, and you earned some cash from the campus work program."
+  },
+  "shovel_fail": {
+    "title": "Slipped and Fell",
+    "image": null,
+    "description": "You neglected to shovel the snow in time. Walking to class, you slipped on ice and bruised your ego (and your tailbone)."
+  },
+  "lecture_success": {
+    "title": "Met Someone New",
+    "image": null,
+    "description": "During the lecture, you struck up a conversation with someone. They seem to know a lot about the strange happenings on campus."
+  },
+  "roommate_store": {
+    "title": "Roommate's Stash",
+    "image": null,
+    "description": "Your roommate has a surprising collection of energy drinks and coffee. You trade some cash for a caffeine boost."
+  },
+  "rumor_map": {
+    "title": "Guard's Information",
+    "image": null,
+    "description": "The guard, persuaded by your cash, shares a campus map with restricted areas marked. 'Be careful where you go,' they warn."
+  },
+  "flooding_map": {
+    "title": "Pattern Emerges",
+    "image": "floodingIcon.png",
+    "description": "Connecting the flooding incidents reveals a pattern. Someone marks a map with the affected buildings. A suspect emerges from the shadows."
+  },
+  "map_footprints": {
+    "title": "Strange Discovery",
+    "image": null,
+    "description": "Following the map leads you to wet footprints trailing from the basement. They're not quite human-shaped..."
+  },
+  "footprints_door": {
+    "title": "Hidden Entrance",
+    "image": "doorIcon.png",
+    "description": "The footprints lead to a concealed door in the basement wall. It's locked, but you now know it exists."
+  },
+  "door_lab": {
+    "title": "Wereshark Laboratory",
+    "image": null,
+    "description": "Using the key, you unlock the hidden door. Inside is a secret experimental fish lab with strange aquariums. One tank has a nameplate for your roommate!"
+  },
+  "wereshark_lab": {
+    "title": "The Truth Revealed",
+    "image": null,
+    "description": "The laboratory confirms your suspicions. The experimental wereshark research was centered here, and your roommate's name is all over the records."
+  },
+  "accuse_correct": {
+    "title": "CASE SOLVED!",
+    "image": null,
+    "description": "You confront your roommate with the evidence. They confess - the wereshark experiments transformed them, and the flooding was their failed attempts to destroy the lab. The authorities take them away. You've solved the mystery!"
+  },
+  "accuse_wrong": {
+    "title": "False Accusation",
+    "image": null,
+    "description": "You accused the wrong person! They're furious and everyone thinks you're losing your mind. Your sanity takes a massive hit from the embarrassment and doubt."
+  },
+  "study_success": {
+    "title": "Productive Study Session",
+    "image": "studyIcon.png",
+    "description": "You completed your study session with the textbook. You feel prepared and notice a flyer for an upcoming lecture series on campus mysteries."
+  },
+  "guard_key": {
+    "title": "Key to Restricted Areas",
+    "image": null,
+    "description": "You slip the guard some cash. They look around nervously, then hand you a key. 'This opens some of the old maintenance areas. Don't get caught.'"
   }
 }
