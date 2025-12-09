@@ -1,32 +1,32 @@
 {
   "intro_success": {
     "title": "Study Successful",
-    "image": "testimage.webp",
+    "image": "textbookIcon.png",
     "description": "You managed to focus for a few hours. The material is dry, but you feel a sense of accomplishment. You found a receipt in the textbook."
   },
   "intro_fail": {
     "title": "Distracted",
-    "image": null,
+    "image": "person1.png",
     "description": "You tried to study, but without the textbook, you just stared at the wall. Your anxiety grows."
   },
   "coffee_break": {
     "title": "Caffeinated",
-    "image": "https://placehold.co/600x400/8b5cf6/white?text=Hot+Coffee",
+    "image": "coffee.png",
     "description": "The bitter liquid warms your soul. You feel ready to take on the world, or at least one more hour of calculus."
   },
   "art_therapy": {
     "title": "Art Therapy",
-    "image": "https://placehold.co/600x400/f59e0b/white?text=Abstract+Art",
+    "image": "paintingIcon.png",
     "description": "You paint your feelings. It's messy, but it helps clear your mind."
   },
   "art_practice": {
     "title": "Studio Time",
-    "image": null,
+    "image": "person2.png",
     "description": "You work on your technique. You produced some decent sketches. A new opportunity for your hobby has opened up."
   },
   "board_decay": {
     "title": "Overwhelmed",
-    "image": null,
+    "image": "cashIcon.png",
     "description": "The task was left unattended for too long. It weighs on your mind, draining your mental state."
   },
   "study_note": {
@@ -41,23 +41,23 @@
   },
   "shovel_fail": {
     "title": "Slipped and Fell",
-    "image": null,
+    "image": "footprints.png",
     "description": "You neglected to shovel the snow in time. Walking to class, you slipped on ice and bruised your ego (and your tailbone)."
   },
   "lecture_success": {
     "title": "Met Someone New",
-    "image": null,
+    "image": "lecutreIcon.png",
     "description": "During the lecture, you struck up a conversation with someone. They seem to know a lot about the strange happenings on campus."
   },
   "roommate_store": {
     "title": "Roommate's Stash",
-    "image": null,
+    "image": "roommate.png",
     "description": "Your roommate has a surprising collection of energy drinks and coffee. You trade some cash for a caffeine boost."
   },
   "rumor_map": {
-    "title": "Guard's Information",
-    "image": null,
-    "description": "The guard, persuaded by your cash, shares a campus map with restricted areas marked. 'Be careful where you go,' they warn."
+    "title": "Homemade Map",
+    "image": "rumorIcon.png",
+    "description": "After consulting many rumors going around campus, you work out the locations of all the important pieces of evidence."
   },
   "flooding_map": {
     "title": "Pattern Emerges",
@@ -66,32 +66,32 @@
   },
   "map_footprints": {
     "title": "Strange Discovery",
-    "image": null,
+    "image": "footprints.png",
     "description": "Following the map leads you to wet footprints trailing from the basement. They're not quite human-shaped..."
   },
   "footprints_door": {
     "title": "Hidden Entrance",
-    "image": "doorIcon.png",
+    "image": "key.png",
     "description": "The footprints lead to a concealed door in the basement wall. It's locked, but you now know it exists."
   },
   "door_lab": {
     "title": "Wereshark Laboratory",
-    "image": null,
+    "image": "lab.png",
     "description": "Using the key, you unlock the hidden door. Inside is a secret experimental fish lab with strange aquariums. One tank has a nameplate for your roommate!"
   },
   "wereshark_lab": {
     "title": "The Truth Revealed",
-    "image": null,
+    "image": "lab.png",
     "description": "The laboratory confirms your suspicions. The experimental wereshark research was centered here, and your roommate's name is all over the records."
   },
   "accuse_correct": {
     "title": "CASE SOLVED!",
-    "image": null,
+    "image": "wereshark.png",
     "description": "You confront your roommate with the evidence. They confess - the wereshark experiments transformed them, and the flooding was their failed attempts to destroy the lab. The authorities take them away. You've solved the mystery!"
   },
   "accuse_wrong": {
     "title": "False Accusation",
-    "image": null,
+    "image": "gaurdIcon.png",
     "description": "You accused the wrong person! They're furious and everyone thinks you're losing your mind. Your sanity takes a massive hit from the embarrassment and doubt."
   },
   "study_success": {
@@ -101,7 +101,7 @@
   },
   "guard_key": {
     "title": "Key to Restricted Areas",
-    "image": null,
+    "image": "gaurdIcon.png",
     "description": "You slip the guard some cash. They look around nervously, then hand you a key. 'This opens some of the old maintenance areas. Don't get caught.'"
   }
 }
