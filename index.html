@@ -147,150 +147,36 @@
  * --- DATA CONFIGURATION ---
  */
 
-const DIALOG_DB = {
-    "intro_success": {
-        title: "Study Successful",
-        image: "testimage.webp", // Example valid path
-        description: "You managed to focus for a few hours. The material is dry, but you feel a sense of accomplishment. You found a receipt in the textbook."
-    },
-    "intro_fail": {
-        title: "Distracted",
-        image: null,
-        description: "You tried to study, but without the textbook, you just stared at the wall. Your anxiety grows."
-    },
-    "coffee_break": {
-        title: "Caffeinated",
-        image: "https://placehold.co/600x400/8b5cf6/white?text=Hot+Coffee", 
-        description: "The bitter liquid warms your soul. You feel ready to take on the world, or at least one more hour of calculus."
-    },
-    "art_therapy": {
-        title: "Art Therapy",
-        image: "https://placehold.co/600x400/f59e0b/white?text=Abstract+Art",
-        description: "You paint your feelings. It's messy, but it helps clear your mind."
-    },
-    "art_practice": {
-        title: "Studio Time",
-        image: null,
-        description: "You work on your technique. You produced some decent sketches. A new opportunity for your hobby has opened up."
-    },
-    "board_decay": {
-        title: "Overwhelmed",
-        image: null,
-        description: "The task was left unattended for too long. It weighs on your mind, draining your mental state."
-    }
-};
+// Data will be loaded from external JSON files
+let DIALOG_DB = {};
+let CARDS_DB = {};
 
-const CARDS_DB = {
-    "card_study": {
-        id: "card_study",
-        name: "Study Session",
-        type: "action",
-        color: 0x3b82f6, 
-        image: "https://placehold.co/200x150/3b82f6/white?text=Study",
-        timer: 180, 
-        boardTimer: 600, 
-        slotRequirement: ["slot_work"],
-        reqQuantity: 1,
-        reqCards: ["Textbook"],
-        reqPunishmentCards: ["Distraction"],
-        rewardCards: ["Clue: Receipt", "Coffee"],
-        removeCards: [], 
-        rewardSanity: 5,
-        punishmentSanity: -10,
-        rewardDialog: "intro_success",
-        punishmentDialog: "intro_fail"
-    },
-    "card_textbook": {
-        id: "card_textbook",
-        name: "Textbook",
-        type: "resource",
-        color: 0x9ca3af,
-        image: "https://placehold.co/200x150/9ca3af/white?text=Book",
-        timer: 0,
-        boardTimer: 0, 
-        slotRequirement: ["slot_work"], 
-        reqQuantity: 0,
-        reqCards: [],
-        reqPunishmentCards: [],
-        rewardCards: [],
-        removeCards: [],
-        rewardSanity: 0,
-        punishmentSanity: 0,
-        rewardDialog: null,
-        punishmentDialog: null
-    },
-    "card_coffee": {
-        id: "card_coffee",
-        name: "Coffee",
-        type: "consumable",
-        color: 0xef4444,
-        image: "https://placehold.co/200x150/ef4444/white?text=Latte",
-        timer: 120,
-        boardTimer: 300, 
-        slotRequirement: ["slot_health"],
-        reqQuantity: 0,
-        reqCards: [],
-        reqPunishmentCards: [],
-        rewardCards: [],
-        removeCards: ["Coffee"],
-        rewardSanity: 15,
-        punishmentSanity: 0,
-        rewardDialog: "coffee_break",
-        punishmentDialog: null
-    },
-    "card_painting": {
-        id: "card_painting",
-        name: "Painting",
-        type: "hobby",
-        color: 0xf59e0b, 
-        image: "https://placehold.co/200x150/f59e0b/white?text=Painting",
-        timer: 100,
-        boardTimer: 0,
-        slotRequirement: ["slot_work", "slot_health", "slot_hobby"], 
-        reqQuantity: 0,
-        reqCards: [],
-        reqPunishmentCards: [],
-        rewardCards: [],
-        rewardSanity: 0,
-        rewardsBySlot: {
-            "slot_health": {
-                rewardSanity: 15,
-                rewardDialog: "art_therapy"
-            },
-            "slot_work": {
-                rewardCards: ["Painting", "Painting"], 
-                rewardSanity: 2,
-                rewardDialog: "art_practice"
-            },
-            "slot_hobby": {
-                 rewardSanity: 20,
-                 rewardDialog: "art_therapy"
-            }
-        },
-        removeCards: ["Painting"], 
-        punishmentSanity: 0,
-        punishmentDialog: null
-    },
-    "card_receipt": {
-        id: "card_receipt",
-        name: "Clue: Receipt",
-        type: "clue",
-        color: 0xf59e0b,
-        image: "https://placehold.co/200x150/f59e0b/white?text=Receipt",
-        timer: 0,
-        boardTimer: 0,
-        slotRequirement: null,
-        reqQuantity: 0,
-        reqCards: [],
-        reqPunishmentCards: [],
-        rewardCards: [],
-        removeCards: [],
-        rewardSanity: 0,
-        punishmentSanity: 0,
-        rewardDialog: null,
-        punishmentDialog: null
+// Load JSON data
+async function loadGameData() {
+    try {
+        const [dialogsResponse, cardsResponse] = await Promise.all([
+            fetch('dialogs.json'),
+            fetch('cards.json')
+        ]);
+
+        DIALOG_DB = await dialogsResponse.json();
+        const cardsData = await cardsResponse.json();
+
+        // Convert color strings to hex numbers
+        CARDS_DB = {};
+        for (const [key, card] of Object.entries(cardsData)) {
+            CARDS_DB[key] = {
+                ...card,
+                color: typeof card.color === 'string' ? parseInt(card.color, 16) : card.color
+            };
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Failed to load game data:', error);
+        return false;
     }
-};
+}
 
 const SLOTS_CONFIG = [
     { id: "slot_work", name: "Labor", x: -4, z: 0, color: 0x3b82f6 }, // Blueish
@@ -1340,7 +1226,21 @@ class CardMesh {
  */
 const game = new GameEngine();
 
+// Load game data before allowing game to start
+let dataLoaded = false;
+
+loadGameData().then(success => {
+    dataLoaded = success;
+    if (!success) {
+        alert('Failed to load game data. Please refresh the page.');
+    }
+});
+
 document.getElementById('btn-start').addEventListener('click', () => {
+    if (!dataLoaded) {
+        alert('Game data is still loading. Please wait...');
+        return;
+    }
     document.getElementById('splash-screen').style.display = 'none';
     game.startGame();
 });

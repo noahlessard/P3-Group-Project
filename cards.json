@@ -1,0 +1,111 @@
+{
+  "card_study": {
+    "id": "card_study",
+    "name": "Study Session",
+    "type": "action",
+    "color": "0x3b82f6",
+    "image": "studyIcon.png",
+    "timer": 180,
+    "boardTimer": 800,
+    "slotRequirement": ["slot_work"],
+    "reqQuantity": 1,
+    "reqCards": ["Textbook"],
+    "reqPunishmentCards": ["Distraction"],
+    "rewardCards": ["Clue: Note"],
+    "removeCards": ["Textbook"],
+    "rewardSanity": 0,
+    "punishmentSanity": -10,
+    "rewardDialog": "intro_success",
+    "punishmentDialog": "intro_fail"
+  },
+  "card_textbook": {
+    "id": "card_textbook",
+    "name": "Textbook",
+    "type": "resource",
+    "color": "0x9ca3af",
+    "image": "textbookIcon.png",
+    "timer": 0,
+    "boardTimer": 0,
+    "slotRequirement": ["slot_work"],
+    "reqQuantity": 0,
+    "reqCards": [],
+    "reqPunishmentCards": [],
+    "rewardCards": [],
+    "removeCards": [],
+    "rewardSanity": 0,
+    "punishmentSanity": 0,
+    "rewardDialog": null,
+    "punishmentDialog": null
+  },
+  "card_coffee": {
+    "id": "card_coffee",
+    "name": "Coffee",
+    "type": "consumable",
+    "color": "0xef4444",
+    "image": "https://placehold.co/200x150/ef4444/white?text=Latte",
+    "timer": 120,
+    "boardTimer": 300,
+    "slotRequirement": ["slot_health"],
+    "reqQuantity": 0,
+    "reqCards": [],
+    "reqPunishmentCards": [],
+    "rewardCards": [],
+    "removeCards": ["Coffee"],
+    "rewardSanity": 15,
+    "punishmentSanity": 0,
+    "rewardDialog": "coffee_break",
+    "punishmentDialog": null
+  },
+  "card_painting": {
+    "id": "card_painting",
+    "name": "Painting",
+    "type": "hobby",
+    "color": "0xf59e0b",
+    "image": "paintingIcon.png",
+    "timer": 100,
+    "boardTimer": 0,
+    "slotRequirement": ["slot_work", "slot_health", "slot_hobby"],
+    "reqQuantity": 0,
+    "reqCards": [],
+    "reqPunishmentCards": [],
+    "rewardCards": [],
+    "rewardSanity": 0,
+    "rewardsBySlot": {
+      "slot_health": {
+        "rewardSanity": 15,
+        "rewardDialog": "art_therapy"
+      },
+      "slot_work": {
+        "rewardCards": ["Painting", "Painting"],
+        "rewardSanity": 2,
+        "rewardDialog": "art_practice"
+      },
+      "slot_hobby": {
+        "rewardSanity": 20,
+        "rewardDialog": "art_therapy"
+      }
+    },
+    "removeCards": ["Painting"],
+    "punishmentSanity": 0,
+    "punishmentDialog": null
+  },
+  "card_note": {
+    "id": "card_note",
+    "name": "Clue: Note",
+    "type": "clue",
+    "color": "0xf59e0b",
+    "image": "noteIcon.png",
+    "timer": 0,
+    "boardTimer": 0,
+    "slotRequirement": null,
+    "reqQuantity": 0,
+    "reqCards": [],
+    "reqPunishmentCards": [],
+    "rewardCards": [],
+    "removeCards": [],
+    "rewardSanity": 0,
+    "punishmentSanity": 0,
+    "rewardDialog": null,
+    "punishmentDialog": null
+  }
+}

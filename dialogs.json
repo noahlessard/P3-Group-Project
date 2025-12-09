@@ -1,0 +1,32 @@
+{
+  "intro_success": {
+    "title": "Study Successful",
+    "image": "testimage.webp",
+    "description": "You managed to focus for a few hours. The material is dry, but you feel a sense of accomplishment. You found a receipt in the textbook."
+  },
+  "intro_fail": {
+    "title": "Distracted",
+    "image": null,
+    "description": "You tried to study, but without the textbook, you just stared at the wall. Your anxiety grows."
+  },
+  "coffee_break": {
+    "title": "Caffeinated",
+    "image": "https://placehold.co/600x400/8b5cf6/white?text=Hot+Coffee",
+    "description": "The bitter liquid warms your soul. You feel ready to take on the world, or at least one more hour of calculus."
+  },
+  "art_therapy": {
+    "title": "Art Therapy",
+    "image": "https://placehold.co/600x400/f59e0b/white?text=Abstract+Art",
+    "description": "You paint your feelings. It's messy, but it helps clear your mind."
+  },
+  "art_practice": {
+    "title": "Studio Time",
+    "image": null,
+    "description": "You work on your technique. You produced some decent sketches. A new opportunity for your hobby has opened up."
+  },
+  "board_decay": {
+    "title": "Overwhelmed",
+    "image": null,
+    "description": "The task was left unattended for too long. It weighs on your mind, draining your mental state."
+  }
+}
