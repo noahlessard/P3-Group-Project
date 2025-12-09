@@ -21,6 +21,10 @@
         
         /* Interactive elements within layers need pointer-events auto */
         .interactive { pointer-events: auto; }
+
+        /* Fix for Firefox: Ensure splash screen and its children are always clickable */
+        #splash-screen { pointer-events: auto !important; }
+        #splash-screen * { pointer-events: auto; }
         
         /* Custom Scrollbar for Dialog */
         ::-webkit-scrollbar { width: 8px; }
@@ -1442,8 +1446,8 @@ window.addEventListener('DOMContentLoaded', () => {
             // Array to store candle positions for collision detection
             const candlePositions = [];
 
-            // Random number of candles between 3 and 5
-            const candleCount = Math.floor(Math.random() * 3) + 3; // 3, 4, or 5
+            // Random number of candles between 1 and 3
+            const candleCount = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3
 
             // Minimum distance between candles to prevent overlap
             const MIN_CANDLE_DISTANCE = 3.0;
