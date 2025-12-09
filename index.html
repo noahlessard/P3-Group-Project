@@ -190,7 +190,7 @@ async function loadGameData() {
 }
 
 const SLOTS_CONFIG = [
-    { id: "slot_work", name: "Labor", x: -7, z: -2, color: 0x3b82f6 }, // Far Left
+    { id: "slot_work", name: "Work", x: -7, z: -2, color: 0x3b82f6 }, // Far Left
     { id: "slot_health", name: "Health", x: 7, z: -2, color: 0xef4444 }  // Far Right
 ];
 
@@ -303,7 +303,12 @@ class GameEngine {
         
         // Clear existing
         this.cards.forEach(c => this.scene.remove(c.mesh));
-        this.slots.forEach(s => this.scene.remove(s.mesh));
+        this.slots.forEach(s => {
+            this.scene.remove(s.mesh);
+            this.scene.remove(s.labelMesh);
+            this.scene.remove(s.timerBar);
+            this.scene.remove(s.timerBarBg);
+        });
         this.cards = [];
         this.slots = [];
 
@@ -413,6 +418,10 @@ class GameEngine {
     removeCard(card) {
         this.scene.remove(card.mesh);
         this.cards = this.cards.filter(c => c !== card);
+    }
+
+    hasCardWithName(cardName) {
+        return this.cards.some(card => card.data.name === cardName);
     }
 
     returnToHand(card) {
@@ -696,7 +705,7 @@ class GameEngine {
 
                 // Override reward cards based on use count
                 if (this.lectureUseCount === 1) {
-                    rewards.cards = ["Person 1"];
+                    rewards.cards = ["Classmate"];
                     // Unlock Gossip slot on first use
                     if (!this.hasGossipSlot) {
                         // UPDATED: x: -3.5, z: -2 (Between Labor and Hobby)
@@ -705,7 +714,7 @@ class GameEngine {
                         this.hasGossipSlot = true;
                     }
                 } else if (this.lectureUseCount === 2) {
-                    rewards.cards = ["Person 2"];
+                    rewards.cards = ["Group Partner"];
                 } else if (this.lectureUseCount === 3) {
                     rewards.cards = ["Guard"];
                     // Mark Lecture for removal after giving rewards
@@ -713,8 +722,8 @@ class GameEngine {
                 }
             }
 
-            // SPECIAL LOGIC: Person 2 + Note unlocks Accuse slot
-            if (card.data.name === "Person 2" && slot.id === "slot_gossip") {
+            // SPECIAL LOGIC: Group Partner + Note unlocks Accuse slot
+            if (card.data.name === "Group Partner" && slot.id === "slot_gossip") {
                 const hasNote = participants.some(c => c.data.name === "Clue: Note");
                 if (hasNote && !this.hasAccuseSlot) {
                     this.createSlot({ id: "slot_accuse", name: "Accuse", x: 3.5, z: -2, color: 0xef4444 });
@@ -737,11 +746,21 @@ class GameEngine {
             if(rewards.dialog) this.showDialog(rewards.dialog);
 
             if(rewards.cards) {
-                rewards.cards.forEach((name, i) => {
+                // Cards that should only be given once (no duplicates)
+                const noDuplicateCards = ["Roommate", "Secret Room Rumor", "Flooding Info"];
+
+                let spawnIndex = 0;
+                rewards.cards.forEach((name) => {
                     const key = Object.keys(CARDS_DB).find(k => CARDS_DB[k].name === name);
                     if(key) {
-                        const newC = this.spawnCard(key, slot.mesh.position.x + (i*0.5), slot.mesh.position.z + 2.0);
-                        if(newC) this.returnToHand(newC);
+                        // Check if this is a no-duplicate card and if player already has it
+                        const shouldSkip = noDuplicateCards.includes(name) && this.hasCardWithName(name);
+
+                        if (!shouldSkip) {
+                            const newC = this.spawnCard(key, slot.mesh.position.x + (spawnIndex*0.5), slot.mesh.position.z + 2.0);
+                            if(newC) this.returnToHand(newC);
+                            spawnIndex++;
+                        }
                     }
                 });
             }
@@ -972,9 +991,11 @@ class GameEngine {
         requestAnimationFrame(() => this.animate());
         this.update();
 
-        // Animate candle flame if it exists
-        if (window.candleLoader) {
-            window.candleLoader.animate(0.016); // ~60 FPS
+        // Animate all candle flames if they exist
+        if (window.candleLoaders && window.candleLoaders.length > 0) {
+            window.candleLoaders.forEach(candleLoader => {
+                candleLoader.animate(0.016); // ~60 FPS
+            });
         }
 
         if(this.renderer && this.scene && this.camera) {
@@ -1062,10 +1083,10 @@ class SlotMesh {
             side: THREE.DoubleSide
         });
         
-        const labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 0.5), labelMat);
-        labelMesh.position.set(config.x, 0.02, config.z - 2.0); 
-        labelMesh.rotation.x = -Math.PI / 2;
-        scene.add(labelMesh);
+        this.labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 0.5), labelMat);
+        this.labelMesh.position.set(config.x, 0.02, config.z - 2.0);
+        this.labelMesh.rotation.x = -Math.PI / 2;
+        scene.add(this.labelMesh);
 
         // --- SLOT TIMER BAR (Visual Only) ---
         // Hidden by default, shown when active
@@ -1134,10 +1155,13 @@ class CardMesh {
         const reqs = Array.isArray(data.slotRequirement) ? data.slotRequirement : (data.slotRequirement ? [data.slotRequirement] : []);
         
         if (reqs.length === 1) {
-            if(reqs[0] === 'slot_health') borderColor = 0xef4444; 
-            if(reqs[0] === 'slot_work') borderColor = 0x3b82f6; 
+            if(reqs[0] === 'slot_health') borderColor = 0xef4444;
+            if(reqs[0] === 'slot_work') borderColor = 0x3b82f6;
+            if(reqs[0] === 'slot_gossip') borderColor = 0x8b5cf6;
+            if(reqs[0] === 'slot_hobby') borderColor = 0xf59e0b;
+            if(reqs[0] === 'slot_accuse') borderColor = 0xef4444;
         } else if (reqs.length > 1) {
-            borderColor = 0xf59e0b; 
+            borderColor = 0xf59e0b;
         }
 
         // Pass calculated color to texture generator
@@ -1239,11 +1263,14 @@ class CardMesh {
 
         if(data.slotRequirement) {
              const reqs = Array.isArray(data.slotRequirement) ? data.slotRequirement : [data.slotRequirement];
-             let reqText = reqs.length > 1 ? "ANY SLOT" : reqs[0].replace('slot_', '').toUpperCase();
-             
-             ctx.font = "bold 14px Arial";
-             ctx.fillStyle = "#ffffff";
-             ctx.fillText(reqText, 128, 300);
+
+             // Only display text if there's exactly one slot requirement
+             if (reqs.length === 1) {
+                 let reqText = reqs[0].replace('slot_', '').toUpperCase();
+                 ctx.font = "bold 14px Arial";
+                 ctx.fillStyle = "#ffffff";
+                 ctx.fillText(reqText, 128, 300);
+             }
         }
         
         // Force initial update just in case
@@ -1361,24 +1388,99 @@ window.addEventListener('DOMContentLoaded', () => {
     // Wait a bit for the game engine to initialize
     setTimeout(() => {
         if (window.game && window.game.scene) {
-            const candleLoader = new window.CandleLoader(window.game.scene);
+            // Array to store all candle loaders for animation
+            window.candleLoaders = [];
 
-            // Load candle on the game board
-            // Position it at x: -5, y: 0, z: 0 (left side of board)
-            candleLoader.loadCandle({
-                x: -9,
-                y: 0,
-                z: -5,
-                scale: 0.1,  // Adjust scale as needed
-                rotation: 0  // Rotation in radians
-            }).then((candle) => {
-                console.log('Candle successfully added to the game board!');
+            // Array to store candle positions for collision detection
+            const candlePositions = [];
 
-                // Store reference for later use if needed
-                window.candleLoader = candleLoader;
-            }).catch((error) => {
-                console.error('Failed to load candle:', error);
-            });
+            // Random number of candles between 3 and 5
+            const candleCount = Math.floor(Math.random() * 3) + 3; // 3, 4, or 5
+
+            // Minimum distance between candles to prevent overlap
+            const MIN_CANDLE_DISTANCE = 3.0;
+
+            // Check if a position is valid (not too close to existing candles)
+            function isValidPosition(x, z, existingPositions) {
+                for (const pos of existingPositions) {
+                    const dx = x - pos.x;
+                    const dz = z - pos.z;
+                    const distance = Math.sqrt(dx * dx + dz * dz);
+
+                    if (distance < MIN_CANDLE_DISTANCE) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            // Generate random positions around the board edges (top half only, away from hand)
+            function generateRandomEdgePosition(existingPositions) {
+                const maxAttempts = 50; // Prevent infinite loop
+                let attempts = 0;
+
+                while (attempts < maxAttempts) {
+                    const edge = Math.floor(Math.random() * 3); // 0: left, 1: right, 2: top (no bottom)
+                    const scale = 0.08 + Math.random() * 0.04; // Scale between 0.08 and 0.12
+                    const rotation = (Math.random() - 0.5) * 1.4; // Random rotation between -0.7 and 0.7
+
+                    let x, z;
+
+                    switch(edge) {
+                        case 0: // Left edge (top half only)
+                            x = -9 - Math.random() * 1.0; // Closer to middle: -9 to -10
+                            z = -6 - Math.random() * 2; // Between -6 and -8 (top half only)
+                            break;
+                        case 1: // Right edge (top half only)
+                            x = 9 + Math.random() * 1.0; // Closer to middle: 9 to 10
+                            z = -6 - Math.random() * 2; // Between -6 and -8 (top half only)
+                            break;
+                        case 2: // Top edge (back of board)
+                            x = -8 + Math.random() * 16; // Between -8 and 8
+                            z = -8 - Math.random() * 1.0; // Closer to middle: -8 to -9
+                            break;
+                    }
+
+                    // Check if this position is valid (not too close to other candles)
+                    if (isValidPosition(x, z, existingPositions)) {
+                        return { x, y: 0, z, scale, rotation };
+                    }
+
+                    attempts++;
+                }
+
+                // If we couldn't find a valid position after max attempts, return a position anyway
+                // (This should rarely happen with reasonable MIN_CANDLE_DISTANCE)
+                console.warn('Could not find non-overlapping position for candle, placing anyway');
+                return {
+                    x: -9 - Math.random() * 1.0,
+                    y: 0,
+                    z: -6 - Math.random() * 2,
+                    scale: 0.08 + Math.random() * 0.04,
+                    rotation: (Math.random() - 0.5) * 1.4
+                };
+            }
+
+            // Generate and load random candles
+            for (let i = 0; i < candleCount; i++) {
+                const config = generateRandomEdgePosition(candlePositions);
+
+                // Store this position to prevent future overlaps
+                candlePositions.push({ x: config.x, z: config.z });
+
+                const candleLoader = new window.CandleLoader(window.game.scene);
+
+                candleLoader.loadCandle(config).then((candle) => {
+                    console.log(`Candle ${i + 1}/${candleCount} successfully added to the game board!`);
+
+                    // Store reference for animation
+                    window.candleLoaders.push(candleLoader);
+                }).catch((error) => {
+                    console.error(`Failed to load candle ${i + 1}:`, error);
+                });
+            }
+
+            console.log(`Loading ${candleCount} candles around the board edges...`);
         } else {
             console.error('Game engine not ready');
         }

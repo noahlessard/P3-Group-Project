@@ -103,5 +103,10 @@
     "title": "Key to Restricted Areas",
     "image": "gaurdIcon.png",
     "description": "You slip the guard some cash. They look around nervously, then hand you a key. 'This opens some of the old maintenance areas. Don't get caught.'"
+  },
+  "guard_rumor_fail": {
+    "title": "Unprofessional Conduct",
+    "image": "gaurdIcon.png",
+    "description": "The guard glares at you as you try to share campus rumors with college faculty. 'I'm not interested in gossip, student. This is highly unprofessional.' You feel embarrassed and your reputation takes a hit."
   }
 }
