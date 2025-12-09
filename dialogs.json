@@ -1,8 +1,8 @@
 {
   "intro_success": {
-    "title": "Study Successful",
+    "title": "Successful Studys",
     "image": "textbookIcon.png",
-    "description": "You managed to focus for a few hours. The material is dry, but you feel a sense of accomplishment. You found a receipt in the textbook."
+    "description": "You managed to lock in for a few hours. The material is dry, but you feel a sense of accomplishment. You found a receipt in the textbook."
   },
   "intro_fail": {
     "title": "Distracted",
@@ -37,7 +37,7 @@
   "shovel_success": {
     "title": "Hard Work Pays Off",
     "image": "shovelIcon.png",
-    "description": "You finish shoveling snow from the campus pathways. Your roommate walks by, thanks you awkwardly, and hands you some cash from the work program. They seem nervous and wet, like they've just come from somewhere damp. You file the observation away."
+    "description": "You finish shoveling snow from your apartment's driveway. As thanks, your roommate hands you some cash. They seem nervous and wet, like they've just come from somewhere damp. You file the observation away."
   },
   "shovel_fail": {
     "title": "Slipped and Fell",
@@ -45,9 +45,9 @@
     "description": "You neglected to shovel the snow in time. Walking to class, you slipped on ice and bruised your ego (and your tailbone)."
   },
   "lecture_success": {
-    "title": "Met a Classmate",
+    "title": "Met a Classmate: Flooding?",
     "image": "lecutreIcon.png",
-    "description": "During the lecture, you strike up a conversation with another student. They mention they've heard strange rumors about flooding and water damage in Mordridge Hall, one of the oldest buildings on campus. 'Something weird is definitely going on there,' they say nervously."
+    "description": "During the lecture, you strike up a conversation with another student. They mention they've heard rumors about suspicious flooding in Mordridge Hall. 'Something weird is definitely going on there,' they say nervously."
   },
   "roommate_store": {
     "title": "Roommate's Stash",
@@ -60,17 +60,17 @@
     "description": "The rumors about a hidden basement laboratory in Mordridge Hall become clearer. The classmate and group partner both mention the same thing: there's a restricted area beneath Mordridge that nobody talks about. You sketch out a map showing where it might be."
   },
   "flooding_map": {
-    "title": "The Mordridge Connection",
+    "title": "Morgridge Flooding Confirmed",
     "image": "floodingIcon.png",
-    "description": "Your group partner shares troubling news: there have been repeated flooding incidents specifically in Mordridge Hall's lower levels. The pattern is too deliberate to be natural. Someone—or something—is causing this. This is the key evidence you need."
+    "description": "Your group partner repeats the troubling news: there have been flooding incidents specifically in Mordridge Hall's lower levels. The pattern is too deliberate to be natural. Someone—or something—is causing this. This is the key evidence you need."
   },
   "mystery_stakes": {
-    "title": "The Prize",
+    "title": "The Prize You Need",
     "image": "floodingIcon.png",
     "description": "You overhear administrators discussing the Mordridge situation in panic. Nobody can figure out what's causing the flooding, and they're desperate for answers. They've made an unusual offer: anyone who can identify and prove who or what is behind the incidents gets a full A in all their classes. This mystery just became your top priority."
   },
   "map_footprints": {
-    "title": "Wet Tracks in Mordridge",
+    "title": "Mysterious Footprints in Mordridge",
     "image": "footprints.png",
     "description": "You explore Mordridge Hall's basement with your map in hand. Your heart races when you spot them: strange, wet footprints leading away from the lower levels. They're large and oddly shaped—definitely not a normal student's tracks."
   },
@@ -80,7 +80,7 @@
     "description": "The footprints lead directly to a concealed door in Mordridge's basement wall. It's clearly been used recently—water still drips from the frame. The door is locked, but now you know exactly where the water is coming from: some kind of secret lab!"
   },
   "door_lab": {
-    "title": "The Wereshark Experiment",
+    "title": "Wereshark Experiment Revealed",
     "image": "lab.png",
     "description": "The key opens the hidden door. Your worst fears are confirmed: inside is an underground experimental laboratory, filled with aquariums containing bizarre aquatic creatures. One tank has a nameplate that reads: 'EXPERIMENT SUBJECT - [Your Roommate's Name].' They're the subject, not the researcher."
   },

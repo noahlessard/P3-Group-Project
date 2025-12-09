@@ -13,7 +13,7 @@ WINNING PATH:
 5. Person 2 + Note (GOSSIP) → Flooding Info (unlocks ACCUSE)
 6. Shovel Snow (LABOR) → Cash + Roommate
 7. Guard + Cash (GOSSIP) → Lost Key
-8. Secret Room Rumor (LABOR) → Map
+8. Secret Room Rumor + Flooding Info (GOSSIP) → Map
 9. Map (LABOR) → Wet Footprints
 10. Wet Footprints + Lost Key (LABOR) → Hidden Door
 11. Hidden Door + Lost Key (LABOR) → Wereshark Lab (final clue)
