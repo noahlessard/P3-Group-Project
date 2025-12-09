@@ -8,7 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    
+    <!-- GLTFLoader from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
     <style>
         body { margin: 0; overflow: hidden; background-color: #1a1a1a; font-family: 'Courier New', Courier, monospace; }
         #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
@@ -179,8 +181,8 @@ async function loadGameData() {
 }
 
 const SLOTS_CONFIG = [
-    { id: "slot_work", name: "Labor", x: -4, z: 0, color: 0x3b82f6 }, // Blueish
-    { id: "slot_health", name: "Health", x: 4, z: 0, color: 0xef4444 } // Reddish
+    { id: "slot_work", name: "Labor", x: -7, z: -2, color: 0x3b82f6 }, // Far Left
+    { id: "slot_health", name: "Health", x: 7, z: -2, color: 0xef4444 }  // Far Right
 ];
 
 /**
@@ -212,6 +214,9 @@ class GameEngine {
         
         // State Flags
         this.hasGeneratedHobbySlot = false;
+        this.lectureUseCount = 0;
+        this.hasGossipSlot = false;
+        this.hasAccuseSlot = false;
 
         // Camera Controls
         this.zoomMin = 5;
@@ -282,6 +287,9 @@ class GameEngine {
         this.isPlaying = true;
         this.sanity = 100;
         this.hasGeneratedHobbySlot = false;
+        this.lectureUseCount = 0;
+        this.hasGossipSlot = false;
+        this.hasAccuseSlot = false;
         this.updateSanityUI();
         
         // Clear existing
@@ -651,7 +659,8 @@ class GameEngine {
             // SPECIAL LOGIC: Painting + Work Slot = New Hobby Slot
             if (card.data.name === "Painting" && slot.id === "slot_work" && !this.hasGeneratedHobbySlot) {
                 this.hasGeneratedHobbySlot = true;
-                this.createSlot({ id: "slot_hobby", name: "Hobby", x: 0, z: -3.5, color: 0xf59e0b });
+                // UPDATED: x: 0, z: -2 (Center)
+                this.createSlot({ id: "slot_hobby", name: "Hobby", x: 0, z: -2, color: 0xf59e0b });
                 this.showToast("NEW SLOT UNLOCKED: HOBBY");
             }
 
@@ -662,6 +671,42 @@ class GameEngine {
                 dialog: card.data.rewardDialog
             };
 
+            // SPECIAL LOGIC: Lecture gives different Person cards on successive uses
+            if (card.data.name === "Lecture") {
+                this.lectureUseCount++;
+
+                // Override reward cards based on use count
+                if (this.lectureUseCount === 1) {
+                    rewards.cards = ["Person 1"];
+                    // Unlock Gossip slot on first use
+                    if (!this.hasGossipSlot) {
+                        // UPDATED: x: -3.5, z: -2 (Between Labor and Hobby)
+                        this.createSlot({ id: "slot_gossip", name: "Gossip", x: -3.5, z: -2, color: 0x8b5cf6 });
+                        this.showToast("NEW SLOT UNLOCKED: GOSSIP");
+                        this.hasGossipSlot = true;
+                    }
+                } else if (this.lectureUseCount === 2) {
+                    rewards.cards = ["Person 2"];
+                } else if (this.lectureUseCount === 3) {
+                    rewards.cards = ["Guard"];
+                    // Mark Lecture for removal after giving rewards
+                    card.shouldRemoveAfterResolve = true;
+                }
+            }
+
+            // SPECIAL LOGIC: Person 2 + Note unlocks Accuse slot
+            if (card.data.name === "Person 2" && slot.id === "slot_gossip") {
+                const hasNote = participants.some(c => c.data.name === "Clue: Note");
+                if (hasNote && !this.hasAccuseSlot) {
+                    this.createSlot({ id: "slot_accuse", name: "Accuse", x: 3.5, z: -2, color: 0xef4444 });
+                    this.showToast("NEW SLOT UNLOCKED: ACCUSE");
+                    this.hasAccuseSlot = true;
+                    // Spawn the Make Accusation card
+                    const accuseCard = this.spawnCard("card_accuse", slot.mesh.position.x + 0.5, slot.mesh.position.z + 2.5);
+                    if(accuseCard) this.returnToHand(accuseCard);
+                }
+            }
+
             if (card.data.rewardsBySlot && card.data.rewardsBySlot[slot.id]) {
                 const specific = card.data.rewardsBySlot[slot.id];
                 if(specific.rewardSanity !== undefined) rewards.sanity = specific.rewardSanity;
@@ -671,22 +716,23 @@ class GameEngine {
 
             this.updateSanity(rewards.sanity);
             if(rewards.dialog) this.showDialog(rewards.dialog);
-            
+
             if(rewards.cards) {
                 rewards.cards.forEach((name, i) => {
                     const key = Object.keys(CARDS_DB).find(k => CARDS_DB[k].name === name);
                     if(key) {
                         const newC = this.spawnCard(key, slot.mesh.position.x + (i*0.5), slot.mesh.position.z + 2.0);
-                        if(newC) this.returnToHand(newC); 
+                        if(newC) this.returnToHand(newC);
                     }
                 });
             }
 
             // --- CLEANUP ---
             const cardsToRemoveNames = card.data.removeCards || [];
-            
+
             cardsInSlot.forEach(c => {
-                if(cardsToRemoveNames.includes(c.data.name)) {
+                // Check if card is marked for removal after resolve (e.g., Lecture on 3rd use)
+                if(c.shouldRemoveAfterResolve || cardsToRemoveNames.includes(c.data.name)) {
                     this.removeCard(c);
                 } else {
                     this.returnToHand(c);
@@ -906,6 +952,12 @@ class GameEngine {
     animate() {
         requestAnimationFrame(() => this.animate());
         this.update();
+
+        // Animate candle flame if it exists
+        if (window.candleLoader) {
+            window.candleLoader.animate(0.016); // ~60 FPS
+        }
+
         if(this.renderer && this.scene && this.camera) {
             this.renderer.render(this.scene, this.camera);
         }
@@ -1226,6 +1278,7 @@ class CardMesh {
  * --- MAIN INITIALIZATION ---
  */
 const game = new GameEngine();
+window.game = game; // Make accessible to modules
 
 // Load game data before allowing game to start
 let dataLoaded = false;
@@ -1275,5 +1328,39 @@ document.getElementById('btn-dialog-ok').addEventListener('click', () => {
 });
 
 </script>
+
+<!-- Candle Loader -->
+<script src="./candleLoader.js"></script>
+<script>
+// Wait for game engine to be ready
+window.addEventListener('DOMContentLoaded', () => {
+    // Wait a bit for the game engine to initialize
+    setTimeout(() => {
+        if (window.game && window.game.scene) {
+            const candleLoader = new window.CandleLoader(window.game.scene);
+
+            // Load candle on the game board
+            // Position it at x: -5, y: 0, z: 0 (left side of board)
+            candleLoader.loadCandle({
+                x: -9,
+                y: 0,
+                z: -5,
+                scale: 0.1,  // Adjust scale as needed
+                rotation: 0  // Rotation in radians
+            }).then((candle) => {
+                console.log('Candle successfully added to the game board!');
+
+                // Store reference for later use if needed
+                window.candleLoader = candleLoader;
+            }).catch((error) => {
+                console.error('Failed to load candle:', error);
+            });
+        } else {
+            console.error('Game engine not ready');
+        }
+    }, 100);
+});
+</script>
+
 </body>
 </html>
