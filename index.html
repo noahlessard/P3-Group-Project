@@ -236,9 +236,17 @@ class GameEngine {
         this.zoomMin = 5;
         this.zoomMax = 30;
         this.cameraTarget = new THREE.Vector3(0, 0, 1.5);
+        this.targetCameraY = 16; // Target Y position for smooth zoom
+        this.targetCameraZ = 12; // Target Z position for smooth zoom
+        this.zoomSmoothness = 0.1; // Lower = smoother but slower, higher = faster but chunkier
         this.isPanning = false;
         this.panStart = new THREE.Vector2();
         this.lastCameraPos = new THREE.Vector3();
+
+        // FPS Limiting
+        this.targetFPS = 60;
+        this.targetFrameTime = 1000 / this.targetFPS; // ~16.67ms per frame
+        this.lastFrameTime = 0;
 
         this.initThree();
         this.setupEvents();
@@ -258,13 +266,19 @@ class GameEngine {
         this.camera.position.set(0, 16, 12);
         this.camera.lookAt(this.cameraTarget);
 
-        // Renderer
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.renderer.domElement.style.outline = "none";
-        container.appendChild(this.renderer.domElement);
+        // Renderer with error handling
+        try {
+            this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+            this.renderer.shadowMap.enabled = true;
+            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            this.renderer.domElement.style.outline = "none";
+            container.appendChild(this.renderer.domElement);
+        } catch (error) {
+            console.error('WebGL initialization failed:', error);
+            this.showWebGLError();
+            return;
+        }
 
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -293,6 +307,31 @@ class GameEngine {
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         this.scene.add(floor);
+    }
+
+    showWebGLError() {
+        const container = document.getElementById('game-container');
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); color: white; padding: 30px; border-radius: 10px; max-width: 500px; text-align: center; z-index: 9999; font-family: Arial;';
+        errorDiv.innerHTML = `
+            <h2 style="color: #ff4444; margin-bottom: 20px;">WebGL Error</h2>
+            <p style="margin-bottom: 15px;">Your browser couldn't initialize WebGL, which is required to run this game.</p>
+            <p style="margin-bottom: 15px; font-size: 14px;">This may be due to:</p>
+            <ul style="text-align: left; margin: 0 auto 15px; display: inline-block; font-size: 13px;">
+                <li>Hardware acceleration is disabled</li>
+                <li>Your GPU is not supported</li>
+                <li>Too many browser tabs with 3D content are open</li>
+                <li>Firefox privacy settings are blocking WebGL</li>
+            </ul>
+            <p style="font-size: 14px; color: #aaa;">Try:</p>
+            <ul style="text-align: left; margin: 0 auto; display: inline-block; font-size: 13px; color: #aaa;">
+                <li>Enable hardware acceleration in browser settings</li>
+                <li>Close other tabs and refresh</li>
+                <li>Try Chrome or Edge browser</li>
+                <li>In Firefox: Set <code>webgl.force-enabled</code> to true in about:config</li>
+            </ul>
+        `;
+        container.appendChild(errorDiv);
     }
 
     // --- GAMEPLAY STATE ---
@@ -828,15 +867,15 @@ class GameEngine {
         const zoomSpeed = 0.02;
         const delta = e.deltaY * zoomSpeed;
 
-        let newY = this.camera.position.y + delta;
+        let newY = this.targetCameraY + delta;
         if (newY < this.zoomMin) newY = this.zoomMin;
         if (newY > this.zoomMax) newY = this.zoomMax;
 
         const zOffset = newY * 0.75;
 
-        this.camera.position.y = newY;
-        this.camera.position.z = this.cameraTarget.z + zOffset;
-        this.camera.lookAt(this.cameraTarget);
+        // Set target positions instead of directly setting camera position
+        this.targetCameraY = newY;
+        this.targetCameraZ = this.cameraTarget.z + zOffset;
     }
 
     getRayIntersects(clientX, clientY, objects) {
@@ -992,14 +1031,31 @@ class GameEngine {
         this.draggedCard = null;
     }
 
-    animate() {
-        requestAnimationFrame(() => this.animate());
+    animate(currentTime = 0) {
+        requestAnimationFrame((time) => this.animate(time));
+
+        // FPS limiting - only update if enough time has passed
+        const deltaTime = currentTime - this.lastFrameTime;
+        if (deltaTime < this.targetFrameTime) {
+            return; // Skip this frame
+        }
+
+        // Store the actual time for next frame
+        this.lastFrameTime = currentTime - (deltaTime % this.targetFrameTime);
+
+        // Smooth camera zoom (always runs, even before game starts)
+        if (this.camera) {
+            this.camera.position.y += (this.targetCameraY - this.camera.position.y) * this.zoomSmoothness;
+            this.camera.position.z += (this.targetCameraZ - this.camera.position.z) * this.zoomSmoothness;
+            this.camera.lookAt(this.cameraTarget);
+        }
+
         this.update();
 
         // Animate all candle flames if they exist
         if (window.candleLoaders && window.candleLoaders.length > 0) {
             window.candleLoaders.forEach(candleLoader => {
-                candleLoader.animate(0.016); // ~60 FPS
+                candleLoader.animate(deltaTime / 1000); // Convert to seconds
             });
         }
 
@@ -1391,6 +1447,10 @@ loadGameData().then(success => {
 document.getElementById('btn-start').addEventListener('click', () => {
     if (!dataLoaded) {
         alert('Game data is still loading. Please wait...');
+        return;
+    }
+    if (!game.renderer) {
+        alert('WebGL failed to initialize. Please check the error message and try the suggested fixes.');
         return;
     }
     document.getElementById('splash-screen').style.display = 'none';
