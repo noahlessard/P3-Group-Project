@@ -1,0 +1,42 @@
+SANITY PROTOCOL - SOLUTION GUIDE
+================================
+
+OBJECTIVE: Accuse the Roommate to win. Manage sanity throughout.
+
+WINNING PATH:
+=============
+
+1. Study Session + Textbook (LABOR) → Lecture + Note
+2. Lecture + Study (LABOR, 1st use) → Person 1 (unlocks GOSSIP)
+3. Person 1 + Note (GOSSIP) → Secret Room Rumor
+4. Lecture + Study (LABOR, 2nd use) → Person 2
+5. Person 2 + Note (GOSSIP) → Flooding Info (unlocks ACCUSE)
+6. Shovel Snow (LABOR) → Cash + Roommate
+7. Guard + Cash (GOSSIP) → Lost Key
+8. Secret Room Rumor (LABOR) → Map
+9. Map (LABOR) → Wet Footprints
+10. Wet Footprints + Lost Key (LABOR) → Hidden Door
+11. Hidden Door + Lost Key (LABOR) → Wereshark Lab (final clue)
+12. Lecture + Study (LABOR, 3rd use) → Guard
+13. Make Accusation + Roommate (ACCUSE) → VICTORY!
+
+KEY RULES:
+==========
+
+✓ CORRECT: Accuse Roommate = Win (Case Closed screen)
+✗ WRONG: Accuse Person 1, 2, or Guard = -50 sanity (instant loss risk)
+
+SANITY TIPS:
+============
+
+- Painting in HEALTH slot: +15 sanity
+- Coffee in HEALTH slot: +15 sanity
+- Avoid board decay (red timer) - loses sanity
+- Don't rush the solution; manage health cards between clue gathering
+
+ALTERNATIVE RESOURCES:
+======================
+
+- If you need Cash, complete Shovel Snow
+- If you need Roommate early, complete Shovel Snow
+- These come together, giving you both for the Guard bribe chain
