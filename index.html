@@ -1212,6 +1212,52 @@ class CardMesh {
         }
     }
 
+    drawWrappedText(ctx, text, x, y, maxWidth, initialFontSize, fontLarge, fontMedium, fontSmall) {
+        // Try to fit text with word wrapping, reducing font size if needed
+        const fonts = [fontLarge, fontMedium, fontSmall];
+        const fontSizes = [initialFontSize, 20, 16];
+        
+        for (let i = 0; i < fonts.length; i++) {
+            ctx.font = fonts[i];
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = "center";
+            
+            const words = text.split(' ');
+            const lines = [];
+            let currentLine = '';
+            
+            for (const word of words) {
+                const testLine = currentLine ? currentLine + ' ' + word : word;
+                const metrics = ctx.measureText(testLine);
+                
+                if (metrics.width > maxWidth && currentLine) {
+                    lines.push(currentLine);
+                    currentLine = word;
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            if (currentLine) lines.push(currentLine);
+            
+            // Check if it fits in available space (around 40px for 2 lines)
+            if (lines.length <= 2) {
+                const lineHeight = fontSizes[i] + 2;
+                const totalHeight = lines.length * lineHeight;
+                let startY = y - (totalHeight / 2) + fontSizes[i];
+                
+                for (const line of lines) {
+                    ctx.fillText(line, x, startY);
+                    startY += lineHeight;
+                }
+                return;
+            }
+        }
+        
+        // Fallback: just draw it at smallest size
+        ctx.font = fontSmall;
+        ctx.fillText(text, x, y);
+    }
+
     createCardTexture(data, borderColor) {
         const canvas = document.createElement('canvas');
         canvas.width = 256;
@@ -1253,10 +1299,11 @@ class CardMesh {
             img.src = data.image;
         }
 
+        // Draw card name with word wrapping
         ctx.fillStyle = '#ffffff';
         ctx.font = "bold 24px Courier New";
         ctx.textAlign = "center";
-        ctx.fillText(data.name, 128, 230);
+        this.drawWrappedText(ctx, data.name, 128, 220, 220, 24, "bold 24px Courier New", "bold 20px Courier New", "bold 16px Courier New");
 
         ctx.fillStyle = '#9ca3af'; 
         ctx.font = "italic 16px Arial";

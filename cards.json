@@ -1,7 +1,7 @@
 {
   "card_study": {
     "id": "card_study",
-    "name": "Study Session",
+    "name": "Study CS559",
     "type": "action",
     "color": "0x3b82f6",
     "image": "studyIcon.png",
@@ -138,7 +138,7 @@
     "boardTimer": 0,
     "slotRequirement": ["slot_work"],
     "reqQuantity": 1,
-    "reqCards": ["Study Session"],
+    "reqCards": ["Study CS559"],
     "reqPunishmentCards": [],
     "rewardCards": [],
     "removeCards": [],
@@ -179,13 +179,13 @@
     "reqQuantity": 1,
     "reqCards": ["Clue: Note"],
     "reqPunishmentCards": [],
-    "rewardCards": ["Secret Room Rumor"],
+    "rewardCards": ["Mordridge Basement Rumor"],
     "removeCards": [],
     "rewardSanity": 0,
     "punishmentSanity": 0,
     "rewardDialog": null,
     "punishmentDialog": null,
-    "comment": "Combine with Note in Gossip slot to get Secret Room Rumor. Can also be used in Accuse slot."
+    "comment": "Combine with Note in Gossip slot to get Mordridge Basement Rumor. Can also be used in Accuse slot."
   },
   "card_person2": {
     "id": "card_person2",
@@ -203,7 +203,7 @@
     "removeCards": [],
     "rewardSanity": 0,
     "punishmentSanity": 0,
-    "rewardDialog": null,
+    "rewardDialog": "mystery_stakes",
     "punishmentDialog": null,
     "comment": "Combine with Note in Gossip slot to get Flooding Info (unlocks Accuse slot). Can also be used in Accuse slot."
   },
@@ -249,7 +249,7 @@
   },
   "card_secret_basement_rumor": {
     "id": "card_secret_basement_rumor",
-    "name": "Secret Room Rumor",
+    "name": "Mordridge Basement Rumor",
     "type": "clue",
     "color": "0x9ca3af",
     "image": "rumorIcon.png",
