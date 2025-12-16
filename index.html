@@ -1078,6 +1078,29 @@ class GameEngine {
                 newCard.targetPos.y = pos.y; 
             }
         });
+        // Handle candles when switching render modes
+        if (this.renderMode === 'prototype') {
+            // Remove any loaded GLTF candlesticks and clear loaders
+            if (window.candleLoaders && window.candleLoaders.length > 0) {
+                window.candleLoaders.forEach(cl => {
+                    try { cl.removeCandle(); } catch (e) { /* ignore */ }
+                });
+                window.candleLoaders = [];
+                console.log('Prototype mode: removed existing candlesticks.');
+            }
+        } else {
+            // Switched to full — (re-)load candles if loader exists
+            if (typeof window.loadCandles === 'function') {
+                // Remove any leftover references first
+                if (window.candleLoaders && window.candleLoaders.length > 0) {
+                    window.candleLoaders.forEach(cl => {
+                        try { cl.removeCandle(); } catch (e) { /* ignore */ }
+                    });
+                    window.candleLoaders = [];
+                }
+                window.loadCandles();
+            }
+        }
     }
     
     showToast(msg) {
@@ -1454,6 +1477,22 @@ document.getElementById('btn-start').addEventListener('click', () => {
     }
     document.getElementById('splash-screen').style.display = 'none';
     game.startGame();
+
+    // Add a top-center badge showing Group ID after the game starts
+    (function showGroupIdBadge() {
+        try {
+            let badge = document.getElementById('group-id-badge');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.id = 'group-id-badge';
+                badge.textContent = 'Group ID: 5382';
+                badge.style.cssText = 'position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: #fff; padding: 6px 12px; border-radius: 6px; font-family: Arial, Helvetica, sans-serif; font-weight: 700; z-index: 10000; pointer-events: none;';
+                document.body.appendChild(badge);
+            }
+        } catch (e) {
+            console.error('Failed to show Group ID badge', e);
+        }
+    })();
 });
 
 document.getElementById('btn-restart').addEventListener('click', () => {
@@ -1502,96 +1541,106 @@ window.addEventListener('DOMContentLoaded', () => {
             // Array to store all candle loaders for animation
             window.candleLoaders = [];
 
-            // Array to store candle positions for collision detection
-            const candlePositions = [];
+            // Expose a loader function so we can re-run candle loading when toggling modes
+            window.loadCandles = function() {
+                // Array to store candle positions for collision detection
+                const candlePositions = [];
 
-            // Random number of candles between 1 and 3
-            const candleCount = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3
+                // Random number of candles between 1 and 3
+                const candleCount = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3
 
-            // Minimum distance between candles to prevent overlap
-            const MIN_CANDLE_DISTANCE = 3.0;
+                // Minimum distance between candles to prevent overlap
+                const MIN_CANDLE_DISTANCE = 3.0;
 
-            // Check if a position is valid (not too close to existing candles)
-            function isValidPosition(x, z, existingPositions) {
-                for (const pos of existingPositions) {
-                    const dx = x - pos.x;
-                    const dz = z - pos.z;
-                    const distance = Math.sqrt(dx * dx + dz * dz);
+                // Check if a position is valid (not too close to existing candles)
+                function isValidPosition(x, z, existingPositions) {
+                    for (const pos of existingPositions) {
+                        const dx = x - pos.x;
+                        const dz = z - pos.z;
+                        const distance = Math.sqrt(dx * dx + dz * dz);
 
-                    if (distance < MIN_CANDLE_DISTANCE) {
-                        return false;
+                        if (distance < MIN_CANDLE_DISTANCE) {
+                            return false;
+                        }
                     }
-                }
-                return true;
-            }
-
-            // Generate random positions around the board edges (top half only, away from hand)
-            function generateRandomEdgePosition(existingPositions) {
-                const maxAttempts = 50; // Prevent infinite loop
-                let attempts = 0;
-
-                while (attempts < maxAttempts) {
-                    const edge = Math.floor(Math.random() * 3); // 0: left, 1: right, 2: top (no bottom)
-                    const scale = 0.08 + Math.random() * 0.04; // Scale between 0.08 and 0.12
-                    const rotation = (Math.random() - 0.5) * 1.4; // Random rotation between -0.7 and 0.7
-
-                    let x, z;
-
-                    switch(edge) {
-                        case 0: // Left edge (top half only)
-                            x = -9 - Math.random() * 1.0; // Closer to middle: -9 to -10
-                            z = -6 - Math.random() * 2; // Between -6 and -8 (top half only)
-                            break;
-                        case 1: // Right edge (top half only)
-                            x = 9 + Math.random() * 1.0; // Closer to middle: 9 to 10
-                            z = -6 - Math.random() * 2; // Between -6 and -8 (top half only)
-                            break;
-                        case 2: // Top edge (back of board)
-                            x = -8 + Math.random() * 16; // Between -8 and 8
-                            z = -8 - Math.random() * 1.0; // Closer to middle: -8 to -9
-                            break;
-                    }
-
-                    // Check if this position is valid (not too close to other candles)
-                    if (isValidPosition(x, z, existingPositions)) {
-                        return { x, y: 0, z, scale, rotation };
-                    }
-
-                    attempts++;
+                    return true;
                 }
 
-                // If we couldn't find a valid position after max attempts, return a position anyway
-                // (This should rarely happen with reasonable MIN_CANDLE_DISTANCE)
-                console.warn('Could not find non-overlapping position for candle, placing anyway');
-                return {
-                    x: -9 - Math.random() * 1.0,
-                    y: 0,
-                    z: -6 - Math.random() * 2,
-                    scale: 0.08 + Math.random() * 0.04,
-                    rotation: (Math.random() - 0.5) * 1.4
-                };
+                // Generate random positions around the board edges (top half only, away from hand)
+                function generateRandomEdgePosition(existingPositions) {
+                    const maxAttempts = 50; // Prevent infinite loop
+                    let attempts = 0;
+
+                    while (attempts < maxAttempts) {
+                        const edge = Math.floor(Math.random() * 3); // 0: left, 1: right, 2: top (no bottom)
+                        const scale = 0.08 + Math.random() * 0.04; // Scale between 0.08 and 0.12
+                        const rotation = (Math.random() - 0.5) * 1.4; // Random rotation between -0.7 and 0.7
+
+                        let x, z;
+
+                        switch(edge) {
+                            case 0: // Left edge (top half only)
+                                x = -9 - Math.random() * 1.0; // Closer to middle: -9 to -10
+                                z = -6 - Math.random() * 2; // Between -6 and -8 (top half only)
+                                break;
+                            case 1: // Right edge (top half only)
+                                x = 9 + Math.random() * 1.0; // Closer to middle: 9 to 10
+                                z = -6 - Math.random() * 2; // Between -6 and -8 (top half only)
+                                break;
+                            case 2: // Top edge (back of board)
+                                x = -8 + Math.random() * 16; // Between -8 and 8
+                                z = -8 - Math.random() * 1.0; // Closer to middle: -8 to -9
+                                break;
+                        }
+
+                        // Check if this position is valid (not too close to other candles)
+                        if (isValidPosition(x, z, existingPositions)) {
+                            return { x, y: 0, z, scale, rotation };
+                        }
+
+                        attempts++;
+                    }
+
+                    // If we couldn't find a valid position after max attempts, return a position anyway
+                    // (This should rarely happen with reasonable MIN_CANDLE_DISTANCE)
+                    console.warn('Could not find non-overlapping position for candle, placing anyway');
+                    return {
+                        x: -9 - Math.random() * 1.0,
+                        y: 0,
+                        z: -6 - Math.random() * 2,
+                        scale: 0.08 + Math.random() * 0.04,
+                        rotation: (Math.random() - 0.5) * 1.4
+                    };
+                }
+
+                // Generate and load random candles
+                for (let i = 0; i < candleCount; i++) {
+                    const config = generateRandomEdgePosition(candlePositions);
+
+                    // Store this position to prevent future overlaps
+                    candlePositions.push({ x: config.x, z: config.z });
+
+                    const candleLoader = new window.CandleLoader(window.game.scene);
+
+                    candleLoader.loadCandle(config).then((candle) => {
+                        console.log(`Candle ${i + 1}/${candleCount} successfully added to the game board!`);
+
+                        // Store reference for animation
+                        window.candleLoaders.push(candleLoader);
+                    }).catch((error) => {
+                        console.error(`Failed to load candle ${i + 1}:`, error);
+                    });
+                }
+
+                console.log(`Loading ${candleCount} candles around the board edges...`);
+            };
+
+            // Only load candles on startup if we're in full render mode
+            if (window.game.renderMode === 'prototype') {
+                console.log('Prototype mode active: skipping candlestick GLTF model loading on startup.');
+            } else {
+                window.loadCandles();
             }
-
-            // Generate and load random candles
-            for (let i = 0; i < candleCount; i++) {
-                const config = generateRandomEdgePosition(candlePositions);
-
-                // Store this position to prevent future overlaps
-                candlePositions.push({ x: config.x, z: config.z });
-
-                const candleLoader = new window.CandleLoader(window.game.scene);
-
-                candleLoader.loadCandle(config).then((candle) => {
-                    console.log(`Candle ${i + 1}/${candleCount} successfully added to the game board!`);
-
-                    // Store reference for animation
-                    window.candleLoaders.push(candleLoader);
-                }).catch((error) => {
-                    console.error(`Failed to load candle ${i + 1}:`, error);
-                });
-            }
-
-            console.log(`Loading ${candleCount} candles around the board edges...`);
         } else {
             console.error('Game engine not ready');
         }
